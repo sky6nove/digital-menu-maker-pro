@@ -27,7 +27,7 @@ const Menu = () => {
       // Load profile for menu name
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("menu_name")
+        .select("*")
         .eq("id", user?.id)
         .single();
         

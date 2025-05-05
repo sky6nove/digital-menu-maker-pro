@@ -27,7 +27,7 @@ const Settings = () => {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("menu_name")
+        .select("*")
         .eq("id", user?.id)
         .single();
       
@@ -50,7 +50,9 @@ const Settings = () => {
       
       const { error } = await supabase
         .from("profiles")
-        .update({ menu_name: menuName })
+        .update({ 
+          menu_name: menuName 
+        })
         .eq("id", user?.id);
       
       if (error) throw error;
