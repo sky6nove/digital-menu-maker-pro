@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Settings } from "lucide-react";
 
 const AuthNavbar = () => {
   const { user, signOut } = useAuth();
@@ -21,6 +21,9 @@ const AuthNavbar = () => {
             </Link>
             <Link to="/menu" className="text-sm font-medium transition-colors hover:text-primary">
               Menu Preview
+            </Link>
+            <Link to="/settings" className="text-sm font-medium transition-colors hover:text-primary">
+              Configurações
             </Link>
           </nav>
         </div>

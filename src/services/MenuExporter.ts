@@ -3,7 +3,7 @@ import { Product, Category } from "../types";
 
 class MenuExporter {
   // Generates the HTML for the menu based on products and categories
-  async generateMenuHTML(products: Product[], categories: Category[]): Promise<string> {
+  async generateMenuHTML(products: Product[], categories: Category[], menuName: string = "CARDÁPIO Burguers"): Promise<string> {
     // Filter only active products and categories
     const activeProducts = products.filter((p) => p.isActive);
     const activeCategories = categories.filter((c) => c.isActive);
@@ -14,7 +14,7 @@ class MenuExporter {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CARDÁPIO Burguers</title>
+    <title>${menuName}</title>
     <style>
         :root {
             --primary-color: #ff6200;
@@ -278,7 +278,7 @@ class MenuExporter {
 <body>
     <div class="container">
         <header>
-            <h1>CARDÁPIO Burguers</h1>
+            <h1>${menuName}</h1>
         </header>
 
         ${this.generateCategoriesHTML(activeProducts, activeCategories)}

@@ -12,6 +12,7 @@ const Menu = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [menuName, setMenuName] = useState("CARDÁPIO Burguers");
 
   useEffect(() => {
     if (user) {
@@ -22,6 +23,17 @@ const Menu = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Load profile for menu name
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("menu_name")
+        .eq("id", user?.id)
+        .single();
+        
+      if (!profileError && profileData?.menu_name) {
+        setMenuName(profileData.menu_name);
+      }
       
       // Load categories
       const { data: categoriesData, error: categoriesError } = await supabase
@@ -79,7 +91,7 @@ const Menu = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <AuthNavbar />
-      <MenuPreview products={products} categories={categories} />
+      <MenuPreview products={products} categories={categories} menuName={menuName} />
     </div>
   );
 };

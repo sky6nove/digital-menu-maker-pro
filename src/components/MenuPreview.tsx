@@ -9,9 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 interface MenuPreviewProps {
   products: Product[];
   categories: Category[];
+  menuName?: string;
 }
 
-const MenuPreview = ({ products, categories }: MenuPreviewProps) => {
+const MenuPreview = ({ products, categories, menuName = "CARDÁPIO Burguers" }: MenuPreviewProps) => {
   const { toast } = useToast();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -110,7 +111,7 @@ const MenuPreview = ({ products, categories }: MenuPreviewProps) => {
     <div className="min-h-screen bg-menu-background text-menu-foreground pb-24">
       <div className="container max-w-4xl mx-auto px-4 py-6">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-menu-accent mb-2">CARDÁPIO Burguers</h1>
+          <h1 className="text-4xl font-bold text-menu-accent mb-2">{menuName}</h1>
           <p className="text-menu-foreground opacity-75">Sabor sem igual!</p>
         </div>
 
