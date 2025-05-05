@@ -1,9 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { Product, Category } from "@/types";
-import { ProductService, CategoryService } from "@/services/MockDataService";
+import { toast } from "sonner";
 import MenuExporter from "@/services/MenuExporter";
-import Navbar from "@/components/Navbar";
 import ProductTable from "@/components/ProductTable";
 import ProductForm from "@/components/ProductForm";
 import CategoryTable from "@/components/CategoryTable";
@@ -12,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { toast } from "sonner";
 import { Plus, Download, Eye } from "lucide-react";
+import AuthNavbar from "@/components/AuthNavbar";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
@@ -23,20 +25,57 @@ const Dashboard = () => {
   const [currentProduct, setCurrentProduct] = useState<Product | undefined>(undefined);
   const [currentCategory, setCurrentCategory] = useState<Category | undefined>(undefined);
   const [activeTab, setActiveTab] = useState("products");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
     try {
-      const productsData = await ProductService.getAllProducts();
-      const categoriesData = await CategoryService.getAllCategories();
-      setProducts(productsData);
-      setCategories(categoriesData);
-    } catch (error) {
+      setLoading(true);
+      
+      // Load categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("user_id", user?.id);
+      
+      if (categoriesError) throw categoriesError;
+      
+      // Load products
+      const { data: productsData, error: productsError } = await supabase
+        .from("products")
+        .select("*")
+        .eq("user_id", user?.id);
+      
+      if (productsError) throw productsError;
+      
+      // Transform to match our existing interfaces
+      const formattedCategories: Category[] = categoriesData.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        isActive: cat.is_active
+      }));
+      
+      const formattedProducts: Product[] = productsData.map(prod => ({
+        id: prod.id,
+        name: prod.name,
+        description: prod.description || "",
+        price: prod.price,
+        categoryId: prod.category_id || 0,
+        isActive: prod.is_active
+      }));
+      
+      setCategories(formattedCategories);
+      setProducts(formattedProducts);
+    } catch (error: any) {
       toast.error("Erro ao carregar dados");
       console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,10 +93,16 @@ const Dashboard = () => {
   const handleDeleteProduct = async (id: number) => {
     if (confirm("Tem certeza que deseja excluir este produto?")) {
       try {
-        await ProductService.deleteProduct(id);
+        const { error } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", id)
+          .eq("user_id", user?.id);
+          
+        if (error) throw error;
         toast.success("Produto excluído com sucesso");
         loadData();
-      } catch (error) {
+      } catch (error: any) {
         toast.error("Erro ao excluir produto");
         console.error("Error deleting product:", error);
       }
@@ -68,16 +113,40 @@ const Dashboard = () => {
     try {
       if ("id" in productData && productData.id > 0) {
         // Update existing product
-        await ProductService.updateProduct(productData.id, productData);
+        const { error } = await supabase
+          .from("products")
+          .update({
+            name: productData.name,
+            description: productData.description || null,
+            price: productData.price,
+            category_id: productData.categoryId || null,
+            is_active: productData.isActive,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", productData.id)
+          .eq("user_id", user?.id);
+          
+        if (error) throw error;
         toast.success("Produto atualizado com sucesso");
       } else {
         // Create new product
-        await ProductService.createProduct(productData);
+        const { error } = await supabase
+          .from("products")
+          .insert({
+            name: productData.name,
+            description: productData.description || null,
+            price: productData.price,
+            category_id: productData.categoryId || null,
+            is_active: productData.isActive,
+            user_id: user?.id
+          });
+          
+        if (error) throw error;
         toast.success("Produto adicionado com sucesso");
       }
       setIsProductFormOpen(false);
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Erro ao salvar produto");
       console.error("Error saving product:", error);
     }
@@ -105,10 +174,16 @@ const Dashboard = () => {
     
     if (confirm("Tem certeza que deseja excluir esta categoria?")) {
       try {
-        await CategoryService.deleteCategory(id);
+        const { error } = await supabase
+          .from("categories")
+          .delete()
+          .eq("id", id)
+          .eq("user_id", user?.id);
+          
+        if (error) throw error;
         toast.success("Categoria excluída com sucesso");
         loadData();
-      } catch (error) {
+      } catch (error: any) {
         toast.error("Erro ao excluir categoria");
         console.error("Error deleting category:", error);
       }
@@ -119,16 +194,34 @@ const Dashboard = () => {
     try {
       if ("id" in categoryData && categoryData.id > 0) {
         // Update existing category
-        await CategoryService.updateCategory(categoryData.id, categoryData);
+        const { error } = await supabase
+          .from("categories")
+          .update({
+            name: categoryData.name,
+            is_active: categoryData.isActive,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", categoryData.id)
+          .eq("user_id", user?.id);
+          
+        if (error) throw error;
         toast.success("Categoria atualizada com sucesso");
       } else {
         // Create new category
-        await CategoryService.createCategory(categoryData);
+        const { error } = await supabase
+          .from("categories")
+          .insert({
+            name: categoryData.name,
+            is_active: categoryData.isActive,
+            user_id: user?.id
+          });
+          
+        if (error) throw error;
         toast.success("Categoria adicionada com sucesso");
       }
       setIsCategoryFormOpen(false);
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Erro ao salvar categoria");
       console.error("Error saving category:", error);
     }
@@ -150,9 +243,20 @@ const Dashboard = () => {
     window.open("/menu", "_blank");
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-lg">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <AuthNavbar />
       
       <main className="flex-1 container py-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
