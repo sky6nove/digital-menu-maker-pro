@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import FileUploader from "./FileUploader";
 import { Plus, Trash, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProductFormProps {
   product?: Product;
@@ -24,6 +25,7 @@ interface ProductFormProps {
 
 const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("basic");
   const [formData, setFormData] = useState<Omit<Product, "id"> | Product>({
     id: product?.id || 0,
@@ -63,7 +65,16 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setSizes(data);
+        // Convert the data to match our ProductSize interface
+        const formattedSizes: ProductSize[] = data.map((size: any) => ({
+          id: size.id,
+          product_id: size.product_id,
+          name: size.name,
+          price: size.price,
+          is_default: size.is_default
+        }));
+        
+        setSizes(formattedSizes);
         setHasMultipleSizes(true);
       }
     } catch (error: any) {
@@ -86,7 +97,18 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
         
       if (complementsError) throw complementsError;
       
-      setAvailableComplements(complementsData || []);
+      if (complementsData) {
+        // Convert the data to match our Complement interface
+        const formattedComplements: Complement[] = complementsData.map((comp: any) => ({
+          id: comp.id,
+          name: comp.name,
+          price: comp.price,
+          image_url: comp.image_url,
+          is_active: comp.is_active
+        }));
+        
+        setAvailableComplements(formattedComplements);
+      }
       
       if (!product?.id) return;
       
@@ -295,6 +317,15 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
   };
 
   const updateProductComplements = async (productId: number) => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       // First, delete all existing relationships
       await supabase
@@ -307,7 +338,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
         const complementsToInsert = selectedComplements.map(complementId => ({
           product_id: productId,
           complement_id: complementId,
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: user.id
         }));
         
         await supabase
