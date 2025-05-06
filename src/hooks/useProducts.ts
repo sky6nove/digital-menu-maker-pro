@@ -1,0 +1,215 @@
+
+import { useState } from "react";
+import { Product, ProductSize } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export const useProducts = (userId?: string) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState<Product | undefined>(undefined);
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+
+  const loadProducts = async () => {
+    if (!userId) return;
+    
+    try {
+      setLoading(true);
+      
+      const { data: productsData, error: productsError } = await supabase
+        .from("products")
+        .select("*")
+        .eq("user_id", userId);
+      
+      if (productsError) throw productsError;
+      
+      // Transform to match our existing interfaces
+      const formattedProducts: Product[] = productsData.map(prod => ({
+        id: prod.id,
+        name: prod.name,
+        description: prod.description || "",
+        price: prod.price,
+        categoryId: prod.category_id || 0,
+        isActive: prod.is_active,
+        image_url: prod.image_url,
+        allow_half_half: prod.allow_half_half || false,
+        half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+      }));
+      
+      setProducts(formattedProducts);
+    } catch (error: any) {
+      toast.error("Erro ao carregar produtos");
+      console.error("Error loading products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddProduct = () => {
+    setCurrentProduct(undefined);
+    setIsProductFormOpen(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setCurrentProduct(product);
+    setIsProductFormOpen(true);
+  };
+
+  const handleDeleteProduct = async (id: number) => {
+    if (confirm("Tem certeza que deseja excluir este produto?")) {
+      try {
+        const { error } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", id)
+          .eq("user_id", userId);
+          
+        if (error) throw error;
+        toast.success("Produto excluído com sucesso");
+        loadProducts();
+      } catch (error: any) {
+        toast.error("Erro ao excluir produto");
+        console.error("Error deleting product:", error);
+      }
+    }
+  };
+
+  const handleSubmitProduct = async (productData: Omit<Product, "id"> | Product, sizes?: ProductSize[]): Promise<Product | undefined> => {
+    try {
+      if ("id" in productData && productData.id > 0) {
+        // Update existing product
+        const { data, error } = await supabase
+          .from("products")
+          .update({
+            name: productData.name,
+            description: productData.description || null,
+            price: productData.price,
+            category_id: productData.categoryId || null,
+            is_active: productData.isActive,
+            image_url: productData.image_url || null,
+            allow_half_half: productData.allow_half_half || false,
+            half_half_price_rule: productData.half_half_price_rule || 'highest',
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", productData.id)
+          .eq("user_id", userId)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        // Update or insert sizes if provided
+        if (sizes && sizes.length > 0) {
+          // First delete existing sizes
+          const { error: deleteSizesError } = await supabase
+            .rpc("delete_product_sizes", { product_id_param: productData.id });
+            
+          if (deleteSizesError) throw deleteSizesError;
+          
+          // Then insert new sizes
+          const sizesToInsert = sizes.map(size => ({
+            product_id: productData.id,
+            name: size.name,
+            price: size.price,
+            is_default: size.is_default
+          }));
+          
+          const { error: insertSizesError } = await supabase
+            .from("product_sizes")
+            .insert(sizesToInsert);
+            
+          if (insertSizesError) throw insertSizesError;
+        }
+        
+        toast.success("Produto atualizado com sucesso");
+        
+        // Map database format to our interface
+        const updatedProduct: Product = {
+          id: data.id,
+          name: data.name,
+          description: data.description || "",
+          price: data.price,
+          categoryId: data.category_id || 0,
+          isActive: data.is_active,
+          image_url: data.image_url,
+          allow_half_half: data.allow_half_half || false,
+          half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+        };
+        
+        return updatedProduct;
+      } else {
+        // Create new product
+        const { data, error } = await supabase
+          .from("products")
+          .insert({
+            name: productData.name,
+            description: productData.description || null,
+            price: productData.price,
+            category_id: productData.categoryId || null,
+            is_active: productData.isActive,
+            image_url: productData.image_url || null,
+            allow_half_half: productData.allow_half_half || false,
+            half_half_price_rule: productData.half_half_price_rule || 'highest',
+            user_id: userId
+          })
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        // Insert sizes if provided
+        if (sizes && sizes.length > 0) {
+          const sizesToInsert = sizes.map(size => ({
+            product_id: data.id,
+            name: size.name,
+            price: size.price,
+            is_default: size.is_default
+          }));
+          
+          const { error: insertSizesError } = await supabase
+            .from("product_sizes")
+            .insert(sizesToInsert);
+            
+          if (insertSizesError) throw insertSizesError;
+        }
+        
+        toast.success("Produto adicionado com sucesso");
+        
+        // Map database format to our interface
+        const newProduct: Product = {
+          id: data.id,
+          name: data.name,
+          description: data.description || "",
+          price: data.price,
+          categoryId: data.category_id || 0,
+          isActive: data.is_active,
+          image_url: data.image_url,
+          allow_half_half: data.allow_half_half || false,
+          half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+        };
+        
+        setIsProductFormOpen(false);
+        loadProducts();
+        return newProduct;
+      }
+    } catch (error: any) {
+      toast.error("Erro ao salvar produto");
+      console.error("Error saving product:", error);
+      return undefined;
+    }
+  };
+
+  return {
+    products,
+    loading,
+    currentProduct,
+    isProductFormOpen,
+    setIsProductFormOpen,
+    loadProducts,
+    handleAddProduct,
+    handleEditProduct,
+    handleDeleteProduct,
+    handleSubmitProduct,
+    setCurrentProduct
+  };
+};
