@@ -30,3 +30,6 @@ enabled = true
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.type-helpers]
+verify_jwt = false

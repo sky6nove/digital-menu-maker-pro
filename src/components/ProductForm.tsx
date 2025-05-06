@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Product, Category, ProductSize, Complement, ProductComplement } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -57,10 +56,9 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
     if (!product?.id) return;
     
     try {
+      // Use rpc to get around typing issues
       const { data, error } = await supabase
-        .from("product_sizes")
-        .select("*")
-        .eq("product_id", product.id);
+        .rpc('get_product_sizes', { product_id_param: product.id });
         
       if (error) throw error;
       
@@ -89,11 +87,9 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
 
   const loadComplements = async () => {
     try {
-      // Load all available complements
+      // Load all available complements using rpc
       const { data: complementsData, error: complementsError } = await supabase
-        .from("complements")
-        .select("*")
-        .eq("is_active", true);
+        .rpc('get_all_complements');
         
       if (complementsError) throw complementsError;
       
@@ -114,14 +110,12 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       
       // Load selected complements for this product
       const { data: productComplementsData, error: productComplementsError } = await supabase
-        .from("product_complements")
-        .select("complement_id")
-        .eq("product_id", product.id);
+        .rpc('get_product_complements', { product_id_param: product.id });
         
       if (productComplementsError) throw productComplementsError;
       
       if (productComplementsData) {
-        setSelectedComplements(productComplementsData.map(pc => pc.complement_id));
+        setSelectedComplements(productComplementsData.map((pc: any) => pc.complement_id));
       }
     } catch (error: any) {
       console.error("Error loading complements:", error);
@@ -173,7 +167,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       setSizes([
         {
           id: 0,
-          product_id: formData.id as number,
+          product_id: ('id' in formData) ? formData.id : 0,
           name: "Padrão",
           price: formData.price,
           is_default: true
@@ -187,7 +181,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       ...sizes,
       {
         id: 0,
-        product_id: formData.id as number,
+        product_id: ('id' in formData) ? formData.id : 0,
         name: "",
         price: 0,
         is_default: sizes.length === 0
@@ -305,7 +299,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       const productResult = await onSubmit(formData, hasMultipleSizes ? sizes : undefined);
       
       // If product was created/updated successfully and we have product ID
-      if (productResult && "id" in productResult) {
+      if (productResult && typeof productResult === 'object' && 'id' in productResult) {
         const productId = productResult.id;
         
         // Update product complements
@@ -327,23 +321,19 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
     }
     
     try {
-      // First, delete all existing relationships
-      await supabase
-        .from("product_complements")
-        .delete()
-        .eq("product_id", productId);
+      // Use RPC function instead of direct table access
+      await supabase.rpc('delete_product_complements', { product_id_param: productId });
       
       // Then create new relationships for selected complements
       if (selectedComplements.length > 0) {
-        const complementsToInsert = selectedComplements.map(complementId => ({
-          product_id: productId,
-          complement_id: complementId,
-          user_id: user.id
-        }));
-        
-        await supabase
-          .from("product_complements")
-          .insert(complementsToInsert);
+        // Use RPC to insert product complements
+        for (const complementId of selectedComplements) {
+          await supabase.rpc('insert_product_complement', { 
+            product_id_param: productId,
+            complement_id_param: complementId,
+            user_id_param: user.id
+          });
+        }
       }
     } catch (error: any) {
       console.error("Error updating product complements:", error);
