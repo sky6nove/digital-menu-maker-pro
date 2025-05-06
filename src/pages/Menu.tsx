@@ -64,7 +64,10 @@ const Menu = () => {
         description: prod.description || "",
         price: prod.price,
         categoryId: prod.category_id || 0,
-        isActive: prod.is_active
+        isActive: prod.is_active,
+        image_url: prod.image_url,
+        allow_half_half: prod.allow_half_half || false,
+        half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
       }));
       
       setCategories(formattedCategories);

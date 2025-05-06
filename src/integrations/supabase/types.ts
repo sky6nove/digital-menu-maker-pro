@@ -36,12 +36,11 @@ export type Database = {
         }
         Relationships: []
       }
-      products: {
+      complements: {
         Row: {
-          category_id: number | null
           created_at: string | null
-          description: string | null
           id: number
+          image_url: string | null
           is_active: boolean
           name: string
           price: number
@@ -49,10 +48,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          category_id?: number | null
           created_at?: string | null
-          description?: string | null
           id?: number
+          image_url?: string | null
           is_active?: boolean
           name: string
           price: number
@@ -60,10 +58,131 @@ export type Database = {
           user_id: string
         }
         Update: {
+          created_at?: string | null
+          id?: number
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          price?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      product_complements: {
+        Row: {
+          complement_id: number | null
+          created_at: string | null
+          id: number
+          product_id: number | null
+          user_id: string
+        }
+        Insert: {
+          complement_id?: number | null
+          created_at?: string | null
+          id?: number
+          product_id?: number | null
+          user_id: string
+        }
+        Update: {
+          complement_id?: number | null
+          created_at?: string | null
+          id?: number
+          product_id?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_complements_complement_id_fkey"
+            columns: ["complement_id"]
+            isOneToOne: false
+            referencedRelation: "complements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_complements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_sizes: {
+        Row: {
+          created_at: string | null
+          id: number
+          is_default: boolean
+          name: string
+          price: number
+          product_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          is_default?: boolean
+          name: string
+          price: number
+          product_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          is_default?: boolean
+          name?: string
+          price?: number
+          product_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_sizes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          allow_half_half: boolean | null
+          category_id: number | null
+          created_at: string | null
+          description: string | null
+          half_half_price_rule: string | null
+          id: number
+          image_url: string | null
+          is_active: boolean
+          name: string
+          price: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          allow_half_half?: boolean | null
           category_id?: number | null
           created_at?: string | null
           description?: string | null
+          half_half_price_rule?: string | null
           id?: number
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          price: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          allow_half_half?: boolean | null
+          category_id?: number | null
+          created_at?: string | null
+          description?: string | null
+          half_half_price_rule?: string | null
+          id?: number
+          image_url?: string | null
           is_active?: boolean
           name?: string
           price?: number
@@ -142,7 +261,57 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_helper_functions: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      delete_product_complements: {
+        Args: { product_id_param: number }
+        Returns: undefined
+      }
+      get_all_complements: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string | null
+          id: number
+          image_url: string | null
+          is_active: boolean
+          name: string
+          price: number
+          updated_at: string | null
+          user_id: string
+        }[]
+      }
+      get_product_complements: {
+        Args: { product_id_param: number }
+        Returns: {
+          complement_id: number | null
+          created_at: string | null
+          id: number
+          product_id: number | null
+          user_id: string
+        }[]
+      }
+      get_product_sizes: {
+        Args: { product_id_param: number }
+        Returns: {
+          created_at: string | null
+          id: number
+          is_default: boolean
+          name: string
+          price: number
+          product_id: number | null
+          updated_at: string | null
+        }[]
+      }
+      insert_product_complement: {
+        Args: {
+          product_id_param: number
+          complement_id_param: number
+          user_id_param: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Product, Category, ProductSize, Complement, ProductComplement } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface ProductFormProps {
   product?: Product;
   categories: Category[];
-  onSubmit: (product: Omit<Product, "id"> | Product, sizes?: ProductSize[]) => void;
+  onSubmit: (product: Omit<Product, "id"> | Product, sizes?: ProductSize[]) => Promise<Product | undefined>;
   onCancel: () => void;
 }
 
@@ -56,7 +57,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
     if (!product?.id) return;
     
     try {
-      // Use rpc to get around typing issues
+      // Use RPC to get around typing issues
       const { data, error } = await supabase
         .rpc('get_product_sizes', { product_id_param: product.id });
         
@@ -299,7 +300,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       const productResult = await onSubmit(formData, hasMultipleSizes ? sizes : undefined);
       
       // If product was created/updated successfully and we have product ID
-      if (productResult && typeof productResult === 'object' && 'id' in productResult) {
+      if (productResult) {
         const productId = productResult.id;
         
         // Update product complements

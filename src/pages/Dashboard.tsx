@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Product, Category } from "@/types";
+import { Product, Category, ProductSize } from "@/types";
 import { toast } from "sonner";
 import MenuExporter from "@/services/MenuExporter";
 import ProductTable from "@/components/ProductTable";
@@ -66,7 +65,10 @@ const Dashboard = () => {
         description: prod.description || "",
         price: prod.price,
         categoryId: prod.category_id || 0,
-        isActive: prod.is_active
+        isActive: prod.is_active,
+        image_url: prod.image_url,
+        allow_half_half: prod.allow_half_half || false,
+        half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
       }));
       
       setCategories(formattedCategories);
@@ -109,11 +111,11 @@ const Dashboard = () => {
     }
   };
 
-  const handleSubmitProduct = async (productData: Omit<Product, "id"> | Product) => {
+  const handleSubmitProduct = async (productData: Omit<Product, "id"> | Product, sizes?: ProductSize[]): Promise<Product | undefined> => {
     try {
       if ("id" in productData && productData.id > 0) {
         // Update existing product
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("products")
           .update({
             name: productData.name,
@@ -121,16 +123,62 @@ const Dashboard = () => {
             price: productData.price,
             category_id: productData.categoryId || null,
             is_active: productData.isActive,
+            image_url: productData.image_url || null,
+            allow_half_half: productData.allow_half_half || false,
+            half_half_price_rule: productData.half_half_price_rule || 'highest',
             updated_at: new Date().toISOString()
           })
           .eq("id", productData.id)
-          .eq("user_id", user?.id);
+          .eq("user_id", user?.id)
+          .select()
+          .single();
           
         if (error) throw error;
+        
+        // Update or insert sizes if provided
+        if (sizes && sizes.length > 0) {
+          // First delete existing sizes
+          const { error: deleteSizesError } = await supabase
+            .from("product_sizes")
+            .delete()
+            .eq("product_id", productData.id);
+            
+          if (deleteSizesError) throw deleteSizesError;
+          
+          // Then insert new sizes
+          const sizesToInsert = sizes.map(size => ({
+            product_id: productData.id,
+            name: size.name,
+            price: size.price,
+            is_default: size.is_default
+          }));
+          
+          const { error: insertSizesError } = await supabase
+            .from("product_sizes")
+            .insert(sizesToInsert);
+            
+          if (insertSizesError) throw insertSizesError;
+        }
+        
         toast.success("Produto atualizado com sucesso");
+        
+        // Map database format to our interface
+        const updatedProduct: Product = {
+          id: data.id,
+          name: data.name,
+          description: data.description || "",
+          price: data.price,
+          categoryId: data.category_id || 0,
+          isActive: data.is_active,
+          image_url: data.image_url,
+          allow_half_half: data.allow_half_half || false,
+          half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+        };
+        
+        return updatedProduct;
       } else {
         // Create new product
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("products")
           .insert({
             name: productData.name,
@@ -138,17 +186,55 @@ const Dashboard = () => {
             price: productData.price,
             category_id: productData.categoryId || null,
             is_active: productData.isActive,
+            image_url: productData.image_url || null,
+            allow_half_half: productData.allow_half_half || false,
+            half_half_price_rule: productData.half_half_price_rule || 'highest',
             user_id: user?.id
-          });
+          })
+          .select()
+          .single();
           
         if (error) throw error;
+        
+        // Insert sizes if provided
+        if (sizes && sizes.length > 0) {
+          const sizesToInsert = sizes.map(size => ({
+            product_id: data.id,
+            name: size.name,
+            price: size.price,
+            is_default: size.is_default
+          }));
+          
+          const { error: insertSizesError } = await supabase
+            .from("product_sizes")
+            .insert(sizesToInsert);
+            
+          if (insertSizesError) throw insertSizesError;
+        }
+        
         toast.success("Produto adicionado com sucesso");
+        
+        // Map database format to our interface
+        const newProduct: Product = {
+          id: data.id,
+          name: data.name,
+          description: data.description || "",
+          price: data.price,
+          categoryId: data.category_id || 0,
+          isActive: data.is_active,
+          image_url: data.image_url,
+          allow_half_half: data.allow_half_half || false,
+          half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+        };
+        
+        setIsProductFormOpen(false);
+        loadData();
+        return newProduct;
       }
-      setIsProductFormOpen(false);
-      loadData();
     } catch (error: any) {
       toast.error("Erro ao salvar produto");
       console.error("Error saving product:", error);
+      return undefined;
     }
   };
 

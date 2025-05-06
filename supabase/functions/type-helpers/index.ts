@@ -28,8 +28,23 @@ serve(async (req) => {
       throw sizesFnError
     }
     
+    // Also make sure the storage bucket for product images exists
+    const { error: storageError } = await supabaseClient.storage.createBucket('product-images', {
+      public: true,
+      fileSizeLimit: 5242880, // 5MB
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    })
+    
+    // If error is not about bucket already existing, throw it
+    if (storageError && !storageError.message.includes('already exists')) {
+      throw storageError
+    }
+    
     return new Response(
-      JSON.stringify({ success: true, message: 'Helper functions created' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Helper functions and storage bucket created' 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
