@@ -8,7 +8,7 @@ export const MenuService = {
     try {
       // Sort categories by order before generating HTML
       const sortedCategories = [...categories].sort((a, b) => 
-        (a.order || 0) - (b.order || 0)
+        a.order - b.order
       );
       
       const html = await MenuExporter.generateMenuHTML(products, sortedCategories);
@@ -32,7 +32,7 @@ export const MenuService = {
     try {
       // Sort categories by order before exporting
       const sortedCategories = [...categories].sort((a, b) => 
-        (a.order || 0) - (b.order || 0)
+        a.order - b.order
       );
       
       const html = await MenuExporter.generateMenuHTML(products, sortedCategories);
