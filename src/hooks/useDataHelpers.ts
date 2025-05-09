@@ -18,6 +18,7 @@ export const useDataHelpers = () => {
   
   // Delete product sizes (for when updating a product)
   const deleteProductSizes = async (productId: number): Promise<boolean> => {
+    // Using direct deletion from table instead of RPC function
     const { error } = await supabase
       .from('product_sizes')
       .delete()

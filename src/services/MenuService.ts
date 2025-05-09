@@ -6,7 +6,12 @@ import { toast } from "sonner";
 export const MenuService = {
   generateMenuHTML: async (products: Product[], categories: Category[]) => {
     try {
-      const html = await MenuExporter.generateMenuHTML(products, categories);
+      // Sort categories by order before generating HTML
+      const sortedCategories = [...categories].sort((a, b) => 
+        (a.order || 0) - (b.order || 0)
+      );
+      
+      const html = await MenuExporter.generateMenuHTML(products, sortedCategories);
       return html;
     } catch (error) {
       console.error("Error generating menu HTML:", error);
@@ -25,7 +30,12 @@ export const MenuService = {
   
   exportMenu: async (products: Product[], categories: Category[]) => {
     try {
-      const html = await MenuExporter.generateMenuHTML(products, categories);
+      // Sort categories by order before exporting
+      const sortedCategories = [...categories].sort((a, b) => 
+        (a.order || 0) - (b.order || 0)
+      );
+      
+      const html = await MenuExporter.generateMenuHTML(products, sortedCategories);
       MenuExporter.downloadHTML(html, "cardapio-digital.html");
       toast.success("Cardápio exportado com sucesso");
     } catch (error) {

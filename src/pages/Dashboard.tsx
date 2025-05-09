@@ -6,10 +6,9 @@ import ProductForm from "@/components/ProductForm";
 import CategoryTable from "@/components/CategoryTable";
 import CategoryForm from "@/components/CategoryForm";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Plus, Download, Eye } from "lucide-react";
+import { Plus, Download, Eye, ArrowUp, ArrowDown } from "lucide-react";
 import AuthNavbar from "@/components/AuthNavbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProducts } from "@/hooks/useProducts";
@@ -18,7 +17,6 @@ import MenuService from "@/services/MenuService";
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("products");
   const [loading, setLoading] = useState(true);
 
   // Use our custom hooks for products and categories
@@ -45,7 +43,9 @@ const Dashboard = () => {
     handleEditCategory,
     handleDeleteCategory,
     handleSubmitCategory,
-    setCurrentCategory
+    setCurrentCategory,
+    moveUp,
+    moveDown
   } = useCategories(user?.id);
 
   useEffect(() => {
@@ -104,58 +104,197 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="products">Produtos</TabsTrigger>
-            <TabsTrigger value="categories">Categorias</TabsTrigger>
-            <TabsTrigger value="settings" disabled>Configurações</TabsTrigger>
-          </TabsList>
+        {/* Unified Menu Management Interface */}
+        <div className="space-y-6">
+          {/* Categories Section */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle>Categorias</CardTitle>
+                <CardDescription>Organize as categorias do seu cardápio</CardDescription>
+              </div>
+              <Button onClick={handleAddCategory}>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Categoria
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-md">
+                {categories.map((category) => (
+                  <div key={category.id} className="border-b last:border-b-0">
+                    <div className="flex items-center justify-between p-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium ${category.isActive ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
+                          {category.name}
+                        </span>
+                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                          {products.filter(p => p.categoryId === category.id).length} produtos
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => moveUp(category.id)}
+                          disabled={categories.indexOf(category) === 0}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => moveDown(category.id)}
+                          disabled={categories.indexOf(category) === categories.length - 1}
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditCategory(category)}
+                        >
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteCategory(category.id, products)}
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Show products in this category */}
+                    <div className="bg-muted/30 border-t">
+                      {products.filter(p => p.categoryId === category.id).length > 0 ? (
+                        products
+                          .filter(p => p.categoryId === category.id)
+                          .map(product => (
+                            <div key={product.id} className="pl-6 pr-3 py-2 border-b last:border-b-0 flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className={`${product.isActive ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
+                                  {product.name}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  R$ {product.price.toFixed(2).replace('.', ',')}
+                                </span>
+                              </div>
+                              <div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleEditProduct(product)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                >
+                                  Excluir
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="pl-6 pr-3 py-2 text-muted-foreground text-sm italic">
+                          Nenhum produto nesta categoria
+                        </div>
+                      )}
+                      <div className="pl-6 pr-3 py-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary"
+                          onClick={() => {
+                            setCurrentProduct({
+                              id: 0,
+                              name: '',
+                              description: '',
+                              price: 0,
+                              categoryId: category.id,
+                              isActive: true,
+                              image_url: '',
+                              allow_half_half: false,
+                              half_half_price_rule: 'highest'
+                            });
+                            setIsProductFormOpen(true);
+                          }}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Adicionar produto nesta categoria
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {categories.length === 0 && (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Nenhuma categoria encontrada. Adicione categorias para organizar seus produtos.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
           
-          <TabsContent value="products" className="space-y-6">
+          {/* Products without category */}
+          {products.filter(p => !p.categoryId).length > 0 && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle>Produtos</CardTitle>
-                  <CardDescription>Gerencie os produtos do seu cardápio</CardDescription>
-                </div>
-                <Button onClick={handleAddProduct}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Produto
-                </Button>
+              <CardHeader className="pb-2">
+                <CardTitle>Produtos sem categoria</CardTitle>
+                <CardDescription>Produtos que não estão em nenhuma categoria</CardDescription>
               </CardHeader>
               <CardContent>
-                <ProductTable
-                  products={products}
-                  categories={categories}
-                  onEdit={handleEditProduct}
-                  onDelete={handleDeleteProduct}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="categories" className="space-y-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle>Categorias</CardTitle>
-                  <CardDescription>Gerencie as categorias do seu cardápio</CardDescription>
+                <div className="border rounded-md">
+                  {products
+                    .filter(p => !p.categoryId)
+                    .map(product => (
+                      <div key={product.id} className="p-3 border-b last:border-b-0 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <span className={`${product.isActive ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
+                            {product.name}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            R$ {product.price.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+                        <div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleEditProduct(product)}
+                          >
+                            Editar
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
+                            Excluir
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                 </div>
-                <Button onClick={handleAddCategory}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Categoria
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <CategoryTable
-                  categories={categories}
-                  onEdit={handleEditCategory}
-                  onDelete={(id) => handleDeleteCategory(id, products)}
-                />
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          )}
+          
+          {/* Add new product button */}
+          <div className="flex justify-center">
+            <Button onClick={handleAddProduct}>
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Novo Produto
+            </Button>
+          </div>
+        </div>
         
         {/* Product Form Dialog */}
         <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>

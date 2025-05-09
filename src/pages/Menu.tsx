@@ -55,8 +55,12 @@ const Menu = () => {
       const formattedCategories: Category[] = categoriesData.map(cat => ({
         id: cat.id,
         name: cat.name,
-        isActive: cat.is_active
+        isActive: cat.is_active,
+        order: cat.order || 0
       }));
+      
+      // Sort categories by order
+      formattedCategories.sort((a, b) => (a.order || 0) - (b.order || 0));
       
       const formattedProducts: Product[] = productsData.map(prod => ({
         id: prod.id,

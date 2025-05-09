@@ -27,8 +27,12 @@ export const useCategories = (userId?: string) => {
       const formattedCategories: Category[] = categoriesData.map(cat => ({
         id: cat.id,
         name: cat.name,
-        isActive: cat.is_active
+        isActive: cat.is_active,
+        order: cat.order || 0
       }));
+      
+      // Sort by order
+      formattedCategories.sort((a, b) => (a.order || 0) - (b.order || 0));
       
       setCategories(formattedCategories);
     } catch (error: any) {
@@ -85,6 +89,7 @@ export const useCategories = (userId?: string) => {
           .update({
             name: categoryData.name,
             is_active: categoryData.isActive,
+            order: categoryData.order || 0,
             updated_at: new Date().toISOString()
           })
           .eq("id", categoryData.id)
@@ -93,12 +98,18 @@ export const useCategories = (userId?: string) => {
         if (error) throw error;
         toast.success("Categoria atualizada com sucesso");
       } else {
+        // Get max order
+        const maxOrder = categories.length > 0 
+          ? Math.max(...categories.map(c => c.order || 0)) + 1 
+          : 0;
+          
         // Create new category
         const { error } = await supabase
           .from("categories")
           .insert({
             name: categoryData.name,
             is_active: categoryData.isActive,
+            order: maxOrder,
             user_id: userId
           });
           
@@ -113,6 +124,78 @@ export const useCategories = (userId?: string) => {
     }
   };
 
+  // Move category up (decrease order)
+  const moveUp = async (categoryId: number) => {
+    const index = categories.findIndex(c => c.id === categoryId);
+    if (index <= 0) return; // Already at the top
+    
+    try {
+      const currentCategory = categories[index];
+      const prevCategory = categories[index - 1];
+      
+      // Swap orders
+      const currentOrder = currentCategory.order || 0;
+      const prevOrder = prevCategory.order || 0;
+      
+      // Update both categories
+      await Promise.all([
+        supabase
+          .from("categories")
+          .update({ order: prevOrder })
+          .eq("id", currentCategory.id)
+          .eq("user_id", userId),
+          
+        supabase
+          .from("categories")
+          .update({ order: currentOrder })
+          .eq("id", prevCategory.id)
+          .eq("user_id", userId)
+      ]);
+      
+      toast.success("Ordem atualizada");
+      loadCategories();
+    } catch (error) {
+      toast.error("Erro ao atualizar ordem");
+      console.error("Error updating order:", error);
+    }
+  };
+
+  // Move category down (increase order)
+  const moveDown = async (categoryId: number) => {
+    const index = categories.findIndex(c => c.id === categoryId);
+    if (index < 0 || index >= categories.length - 1) return; // Already at the bottom
+    
+    try {
+      const currentCategory = categories[index];
+      const nextCategory = categories[index + 1];
+      
+      // Swap orders
+      const currentOrder = currentCategory.order || 0;
+      const nextOrder = nextCategory.order || 0;
+      
+      // Update both categories
+      await Promise.all([
+        supabase
+          .from("categories")
+          .update({ order: nextOrder })
+          .eq("id", currentCategory.id)
+          .eq("user_id", userId),
+          
+        supabase
+          .from("categories")
+          .update({ order: currentOrder })
+          .eq("id", nextCategory.id)
+          .eq("user_id", userId)
+      ]);
+      
+      toast.success("Ordem atualizada");
+      loadCategories();
+    } catch (error) {
+      toast.error("Erro ao atualizar ordem");
+      console.error("Error updating order:", error);
+    }
+  };
+
   return {
     categories,
     loading,
@@ -124,6 +207,8 @@ export const useCategories = (userId?: string) => {
     handleEditCategory,
     handleDeleteCategory,
     handleSubmitCategory,
-    setCurrentCategory
+    setCurrentCategory,
+    moveUp,
+    moveDown
   };
 };

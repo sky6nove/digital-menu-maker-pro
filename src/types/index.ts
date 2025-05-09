@@ -1,4 +1,3 @@
-
 export interface Product {
   id: number;
   name: string;
@@ -15,6 +14,7 @@ export interface Category {
   id: number;
   name: string;
   isActive: boolean;
+  order?: number; // Add order field for sorting
 }
 
 export interface CartItem {
