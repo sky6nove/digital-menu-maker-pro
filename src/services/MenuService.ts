@@ -4,14 +4,14 @@ import MenuExporter from "./MenuExporter";
 import { toast } from "sonner";
 
 export const MenuService = {
-  generateMenuHTML: async (products: Product[], categories: Category[]) => {
+  generateMenuHTML: async (products: Product[], categories: Category[], menuName?: string, whatsappNumber?: string, restaurantAddress?: string) => {
     try {
       // Sort categories by order before generating HTML
       const sortedCategories = [...categories].sort((a, b) => 
         a.order - b.order
       );
       
-      const html = await MenuExporter.generateMenuHTML(products, sortedCategories);
+      const html = await MenuExporter.generateMenuHTML(products, sortedCategories, menuName, whatsappNumber, restaurantAddress);
       return html;
     } catch (error) {
       console.error("Error generating menu HTML:", error);
@@ -28,14 +28,14 @@ export const MenuService = {
     }
   },
   
-  exportMenu: async (products: Product[], categories: Category[]) => {
+  exportMenu: async (products: Product[], categories: Category[], menuName?: string, whatsappNumber?: string, restaurantAddress?: string) => {
     try {
       // Sort categories by order before exporting
       const sortedCategories = [...categories].sort((a, b) => 
         a.order - b.order
       );
       
-      const html = await MenuExporter.generateMenuHTML(products, sortedCategories);
+      const html = await MenuExporter.generateMenuHTML(products, sortedCategories, menuName, whatsappNumber, restaurantAddress);
       MenuExporter.downloadHTML(html, "cardapio-digital.html");
       toast.success("Cardápio exportado com sucesso");
     } catch (error) {

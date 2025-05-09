@@ -1,153 +1,200 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ImagePlus, Upload, X } from "lucide-react";
+import { Image as ImageIcon, Link, Loader2 } from "lucide-react";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 interface FileUploaderProps {
   onUploadComplete: (url: string) => void;
   currentImageUrl?: string;
-  bucketName?: string;
 }
 
-const FileUploader = ({ 
-  onUploadComplete, 
-  currentImageUrl,
-  bucketName = "product-images" 
-}: FileUploaderProps) => {
+const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) => {
+  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
+  const [imageUrl, setImageUrl] = useState(currentImageUrl || "");
+  const [imageUrlInput, setImageUrlInput] = useState("");
+  const [activeTab, setActiveTab] = useState<string>("upload");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const uploadFile = async (file: File) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Tipo de arquivo inválido",
+        description: "Por favor, selecione apenas imagens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "O tamanho máximo permitido é 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setUploading(true);
-      
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-      
+
       // Upload file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, file);
-        
-      if (uploadError) throw uploadError;
-      
-      // Get the public URL
-      const { data } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(filePath);
-        
-      const publicUrl = data.publicUrl;
-      
-      // Set preview and call the callback
-      setPreviewUrl(publicUrl);
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      // Get public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("product-images").getPublicUrl(data.path);
+
+      setImageUrl(publicUrl);
       onUploadComplete(publicUrl);
-      
-      toast.success("Imagem carregada com sucesso");
+
+      toast({
+        title: "Upload concluído",
+        description: "A imagem foi carregada com sucesso.",
+      });
     } catch (error: any) {
       console.error("Error uploading file:", error);
-      toast.error(`Erro ao carregar imagem: ${error.message}`);
+      toast({
+        title: "Erro no upload",
+        description: error.message || "Não foi possível fazer o upload do arquivo.",
+        variant: "destructive",
+      });
     } finally {
       setUploading(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
+  const handleUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!imageUrlInput.trim()) {
+      toast({
+        title: "URL vazia",
+        description: "Por favor, insira uma URL de imagem válida.",
+        variant: "destructive",
+      });
       return;
     }
     
-    const file = e.target.files[0];
-    
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      toast.error("Apenas imagens (JPEG, PNG, GIF, WEBP) são permitidas");
+    // Simple URL validation
+    try {
+      new URL(imageUrlInput);
+    } catch (err) {
+      toast({
+        title: "URL inválida",
+        description: "Por favor, insira uma URL válida.",
+        variant: "destructive",
+      });
       return;
     }
     
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("A imagem deve ter menos de 5MB");
-      return;
-    }
+    setImageUrl(imageUrlInput);
+    onUploadComplete(imageUrlInput);
     
-    // Create object URL for preview
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-    
-    // Upload file
-    uploadFile(file);
-  };
-
-  const handleClearImage = () => {
-    setPreviewUrl(null);
-    onUploadComplete("");
+    toast({
+      title: "URL definida",
+      description: "A URL da imagem foi definida com sucesso.",
+    });
   };
 
   return (
     <div className="space-y-4">
-      {previewUrl ? (
-        <div className="relative rounded-md overflow-hidden border border-gray-200">
-          <img 
-            src={previewUrl} 
-            alt="Preview" 
-            className="w-full h-48 object-cover"
-          />
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute top-2 right-2 rounded-full bg-red-500 hover:bg-red-600 p-1 h-8 w-8"
-            onClick={handleClearImage}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      ) : (
-        <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center hover:border-primary transition-colors cursor-pointer" onClick={() => document.getElementById("file-upload")?.click()}>
-          <ImagePlus className="mx-auto h-12 w-12 text-gray-400" />
-          <div className="mt-2">
-            <p className="text-sm text-gray-500">
-              Clique para carregar uma imagem
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              PNG, JPG, GIF até 5MB
-            </p>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="upload" className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4" />
+            Upload
+          </TabsTrigger>
+          <TabsTrigger value="url" className="flex items-center gap-2">
+            <Link className="h-4 w-4" />
+            URL
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="upload" className="space-y-4">
+          <div className="flex flex-col gap-2">
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="picture">Imagem</Label>
+              <Input
+                id="picture"
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                disabled={uploading}
+                className="cursor-pointer"
+              />
+            </div>
+            {uploading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Enviando imagem...</span>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="url" className="space-y-4">
+          <form onSubmit={handleUrlSubmit} className="space-y-4">
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="imageUrl">URL da imagem</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="imageUrl"
+                  type="url"
+                  placeholder="https://exemplo.com/imagem.jpg"
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit">Definir</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Cole a URL completa de uma imagem disponível na internet
+              </p>
+            </div>
+          </form>
+        </TabsContent>
+      </Tabs>
+
+      {imageUrl && (
+        <div className="mt-4">
+          <Label>Pré-visualização</Label>
+          <div className="mt-2 border rounded-md p-2 bg-muted/30">
+            <img
+              src={imageUrl}
+              alt="Preview"
+              className="mx-auto max-h-48 object-contain"
+              onError={() => {
+                toast({
+                  title: "Erro ao carregar imagem",
+                  description: "Não foi possível carregar a imagem. Verifique a URL.",
+                  variant: "destructive",
+                });
+              }}
+            />
           </div>
         </div>
-      )}
-      
-      <input
-        id="file-upload"
-        type="file"
-        className="hidden"
-        accept="image/*"
-        onChange={handleFileChange}
-        disabled={uploading}
-      />
-      
-      {!previewUrl && (
-        <Button
-          onClick={() => document.getElementById("file-upload")?.click()}
-          variant="outline"
-          className="w-full"
-          disabled={uploading}
-        >
-          {uploading ? (
-            <span className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-              Carregando...
-            </span>
-          ) : (
-            <span className="flex items-center">
-              <Upload className="h-4 w-4 mr-2" />
-              Selecionar imagem
-            </span>
-          )}
-        </Button>
       )}
     </div>
   );

@@ -13,6 +13,8 @@ const Menu = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [menuName, setMenuName] = useState("CARDÁPIO Burguers");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [restaurantAddress, setRestaurantAddress] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -31,8 +33,10 @@ const Menu = () => {
         .eq("id", user?.id)
         .single();
         
-      if (!profileError && profileData?.menu_name) {
-        setMenuName(profileData.menu_name);
+      if (!profileError && profileData) {
+        setMenuName(profileData.menu_name || "CARDÁPIO Burguers");
+        setWhatsappNumber(profileData.whatsapp_number || "");
+        setRestaurantAddress(profileData.restaurant_address || "");
       }
       
       // Load categories
@@ -98,7 +102,13 @@ const Menu = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <AuthNavbar />
-      <MenuPreview products={products} categories={categories} menuName={menuName} />
+      <MenuPreview 
+        products={products} 
+        categories={categories} 
+        menuName={menuName} 
+        whatsappNumber={whatsappNumber}
+        restaurantAddress={restaurantAddress}
+      />
     </div>
   );
 };

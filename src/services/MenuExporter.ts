@@ -3,10 +3,13 @@ import { Product, Category } from "../types";
 
 class MenuExporter {
   // Generates the HTML for the menu based on products and categories
-  async generateMenuHTML(products: Product[], categories: Category[], menuName: string = "CARDÁPIO Burguers"): Promise<string> {
+  async generateMenuHTML(products: Product[], categories: Category[], menuName: string = "CARDÁPIO Burguers", whatsappNumber: string = "", restaurantAddress: string = ""): Promise<string> {
     // Filter only active products and categories
     const activeProducts = products.filter((p) => p.isActive);
     const activeCategories = categories.filter((c) => c.isActive);
+
+    // Format WhatsApp number for the link
+    const formattedWhatsApp = whatsappNumber.replace(/\D/g, "");
 
     // HTML template for the menu
     const html = `<!DOCTYPE html>
@@ -37,7 +40,7 @@ class MenuExporter {
             color: var(--text-color);
             margin: 0;
             padding: 10px;
-            padding-bottom: 70px;
+            padding-bottom: 130px; /* Increased to accommodate the footer */
             line-height: 1.6;
         }
 
@@ -256,6 +259,29 @@ class MenuExporter {
             color: #888;
         }
 
+        /* Footer styles */
+        footer {
+            position: fixed;
+            bottom: 50px; /* Above the cart */
+            left: 0;
+            width: 100%;
+            background-color: var(--card-color);
+            color: var(--description-color);
+            padding: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            border-top: 1px solid #555;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 500px) {
             .container {
                 padding: 10px;
@@ -283,6 +309,13 @@ class MenuExporter {
 
         ${this.generateCategoriesHTML(activeProducts, activeCategories)}
     </div>
+
+    ${whatsappNumber || restaurantAddress ? `
+    <footer>
+        ${restaurantAddress ? `<p>${restaurantAddress}</p>` : ''}
+        ${whatsappNumber ? `<p><a href="https://wa.me/${formattedWhatsApp}">WhatsApp: ${this.formatPhoneNumber(whatsappNumber)}</a></p>` : ''}
+    </footer>
+    ` : ''}
 
     <div id="cart" class="collapsed">
         <div class="cart-header" onclick="toggleCart()">
@@ -443,13 +476,29 @@ class MenuExporter {
             
             // Open WhatsApp with the message
             const encodedMessage = encodeURIComponent(message);
-            window.open(\`https://wa.me/5500000000000?text=\${encodedMessage}\`, '_blank');
+            window.open(\`https://wa.me/${formattedWhatsApp || "5500000000000"}?text=\${encodedMessage}\`, '_blank');
         }
     </script>
 </body>
 </html>`;
 
     return html;
+  }
+
+  // Format phone number for display
+  private formatPhoneNumber(phone: string): string {
+    const digits = phone.replace(/\D/g, "");
+    
+    if (digits.length === 13) {
+      // International format: +55 (11) 99999-9999
+      return `+${digits.substring(0, 2)} (${digits.substring(2, 4)}) ${digits.substring(4, 9)}-${digits.substring(9, 13)}`;
+    } else if (digits.length === 11) {
+      // National format: (11) 99999-9999
+      return `(${digits.substring(0, 2)}) ${digits.substring(2, 7)}-${digits.substring(7, 11)}`;
+    } else {
+      // Return as is if format is unknown
+      return phone;
+    }
   }
 
   // Generates the HTML for categories and their products

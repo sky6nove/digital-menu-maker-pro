@@ -3,16 +3,24 @@ import { useState, useEffect } from "react";
 import { Product, Category, CartItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, X, ShoppingCart } from "lucide-react";
+import { Plus, X, ShoppingCart, MapPin, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MenuPreviewProps {
   products: Product[];
   categories: Category[];
   menuName?: string;
+  whatsappNumber?: string;
+  restaurantAddress?: string;
 }
 
-const MenuPreview = ({ products, categories, menuName = "CARDÁPIO Burguers" }: MenuPreviewProps) => {
+const MenuPreview = ({ 
+  products, 
+  categories, 
+  menuName = "CARDÁPIO Burguers",
+  whatsappNumber = "",
+  restaurantAddress = ""
+}: MenuPreviewProps) => {
   const { toast } = useToast();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -101,14 +109,32 @@ const MenuPreview = ({ products, categories, menuName = "CARDÁPIO Burguers" }: 
     
     message += `\nTotal: R$${formatPrice(getTotalPrice())}\n\nNome para o pedido:\nEndereço de entrega:\n`;
     
+    // Format WhatsApp number (remove non-numeric characters)
+    const formattedWhatsApp = whatsappNumber ? whatsappNumber.replace(/\D/g, "") : "5500000000000";
+    
     // Open WhatsApp with the message
-    const phoneNumber = "5500000000000"; // Replace with actual number
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
+    window.open(`https://wa.me/${formattedWhatsApp}?text=${encodedMessage}`, '_blank');
+  };
+
+  // Format phone number for display
+  const formatPhoneNumber = (phone: string): string => {
+    const digits = phone.replace(/\D/g, "");
+    
+    if (digits.length === 13) {
+      // International format: +55 (11) 99999-9999
+      return `+${digits.substring(0, 2)} (${digits.substring(2, 4)}) ${digits.substring(4, 9)}-${digits.substring(9, 13)}`;
+    } else if (digits.length === 11) {
+      // National format: (11) 99999-9999
+      return `(${digits.substring(0, 2)}) ${digits.substring(2, 7)}-${digits.substring(7, 11)}`;
+    } else {
+      // Return as is if format is unknown
+      return phone;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-menu-background text-menu-foreground pb-24">
+    <div className="min-h-screen bg-menu-background text-menu-foreground pb-32">
       <div className="container max-w-4xl mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-menu-accent mb-2">{menuName}</h1>
@@ -174,6 +200,31 @@ const MenuPreview = ({ products, categories, menuName = "CARDÁPIO Burguers" }: 
           );
         })}
       </div>
+
+      {/* Restaurant Footer */}
+      {(whatsappNumber || restaurantAddress) && (
+        <div className="fixed bottom-[50px] left-0 w-full bg-menu-card border-t border-gray-700 py-2 px-4 text-center text-sm text-gray-300">
+          {restaurantAddress && (
+            <p className="flex items-center justify-center mb-1">
+              <MapPin className="h-4 w-4 mr-1 text-menu-accent" />
+              {restaurantAddress}
+            </p>
+          )}
+          {whatsappNumber && (
+            <p className="flex items-center justify-center">
+              <Phone className="h-4 w-4 mr-1 text-menu-accent" />
+              <a 
+                href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`} 
+                className="text-menu-accent hover:underline"
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                {formatPhoneNumber(whatsappNumber)}
+              </a>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Fixed Cart */}
       <div

@@ -8,10 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const Settings = () => {
   const { user } = useAuth();
   const [menuName, setMenuName] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [restaurantAddress, setRestaurantAddress] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -35,6 +38,8 @@ const Settings = () => {
       
       if (data) {
         setMenuName(data.menu_name || "CARDÁPIO Burguers");
+        setWhatsappNumber(data.whatsapp_number || "");
+        setRestaurantAddress(data.restaurant_address || "");
       }
     } catch (error: any) {
       console.error("Error loading settings:", error);
@@ -48,10 +53,15 @@ const Settings = () => {
     try {
       setSaving(true);
       
+      // Format WhatsApp number (remove non-numeric characters)
+      const formattedWhatsApp = whatsappNumber.replace(/\D/g, "");
+      
       const { error } = await supabase
         .from("profiles")
         .update({ 
-          menu_name: menuName 
+          menu_name: menuName,
+          whatsapp_number: formattedWhatsApp,
+          restaurant_address: restaurantAddress
         })
         .eq("id", user?.id);
       
@@ -89,6 +99,32 @@ const Settings = () => {
                 value={menuName}
                 onChange={(e) => setMenuName(e.target.value)}
                 disabled={loading}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="whatsappNumber">Número de WhatsApp</Label>
+              <Input
+                id="whatsappNumber"
+                placeholder="Ex: 5511999999999"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Digite o número com código do país (ex: 55 para Brasil) e DDD, sem espaços ou caracteres especiais.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="restaurantAddress">Endereço do Restaurante</Label>
+              <Textarea
+                id="restaurantAddress"
+                placeholder="Endereço completo do restaurante"
+                value={restaurantAddress}
+                onChange={(e) => setRestaurantAddress(e.target.value)}
+                disabled={loading}
+                rows={3}
               />
             </div>
             
