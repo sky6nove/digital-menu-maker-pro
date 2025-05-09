@@ -1,8 +1,8 @@
 
 import { useState } from "react";
 import { Category } from "@/types";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CategoryService from "@/services/CategoryService";
 
 export const useCategories = (userId?: string) => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -15,26 +15,8 @@ export const useCategories = (userId?: string) => {
     
     try {
       setLoading(true);
-      
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("user_id", userId);
-      
-      if (categoriesError) throw categoriesError;
-      
-      // Transform to match our existing interfaces
-      const formattedCategories: Category[] = categoriesData.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        isActive: cat.is_active,
-        order: cat.order || 0
-      }));
-      
-      // Sort by order
-      formattedCategories.sort((a, b) => (a.order || 0) - (b.order || 0));
-      
-      setCategories(formattedCategories);
+      const categoriesData = await CategoryService.getCategories(userId);
+      setCategories(categoriesData);
     } catch (error: any) {
       toast.error("Erro ao carregar categorias");
       console.error("Error loading categories:", error);
@@ -64,13 +46,7 @@ export const useCategories = (userId?: string) => {
     
     if (confirm("Tem certeza que deseja excluir esta categoria?")) {
       try {
-        const { error } = await supabase
-          .from("categories")
-          .delete()
-          .eq("id", id)
-          .eq("user_id", userId);
-          
-        if (error) throw error;
+        await CategoryService.deleteCategory(userId!, id);
         toast.success("Categoria excluída com sucesso");
         loadCategories();
       } catch (error: any) {
@@ -84,18 +60,7 @@ export const useCategories = (userId?: string) => {
     try {
       if ("id" in categoryData && categoryData.id > 0) {
         // Update existing category
-        const { error } = await supabase
-          .from("categories")
-          .update({
-            name: categoryData.name,
-            is_active: categoryData.isActive,
-            order: categoryData.order || 0,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", categoryData.id)
-          .eq("user_id", userId);
-          
-        if (error) throw error;
+        await CategoryService.updateCategory(userId!, categoryData as Category);
         toast.success("Categoria atualizada com sucesso");
       } else {
         // Get max order
@@ -104,16 +69,7 @@ export const useCategories = (userId?: string) => {
           : 0;
           
         // Create new category
-        const { error } = await supabase
-          .from("categories")
-          .insert({
-            name: categoryData.name,
-            is_active: categoryData.isActive,
-            order: maxOrder,
-            user_id: userId
-          });
-          
-        if (error) throw error;
+        await CategoryService.createCategory(userId!, categoryData, maxOrder);
         toast.success("Categoria adicionada com sucesso");
       }
       setIsCategoryFormOpen(false);
@@ -137,20 +93,13 @@ export const useCategories = (userId?: string) => {
       const currentOrder = currentCategory.order || 0;
       const prevOrder = prevCategory.order || 0;
       
-      // Update both categories
-      await Promise.all([
-        supabase
-          .from("categories")
-          .update({ order: prevOrder })
-          .eq("id", currentCategory.id)
-          .eq("user_id", userId),
-          
-        supabase
-          .from("categories")
-          .update({ order: currentOrder })
-          .eq("id", prevCategory.id)
-          .eq("user_id", userId)
-      ]);
+      await CategoryService.swapCategoriesOrder(
+        userId!,
+        currentCategory.id,
+        currentOrder,
+        prevCategory.id,
+        prevOrder
+      );
       
       toast.success("Ordem atualizada");
       loadCategories();
@@ -173,20 +122,13 @@ export const useCategories = (userId?: string) => {
       const currentOrder = currentCategory.order || 0;
       const nextOrder = nextCategory.order || 0;
       
-      // Update both categories
-      await Promise.all([
-        supabase
-          .from("categories")
-          .update({ order: nextOrder })
-          .eq("id", currentCategory.id)
-          .eq("user_id", userId),
-          
-        supabase
-          .from("categories")
-          .update({ order: currentOrder })
-          .eq("id", nextCategory.id)
-          .eq("user_id", userId)
-      ]);
+      await CategoryService.swapCategoriesOrder(
+        userId!,
+        currentCategory.id,
+        currentOrder,
+        nextCategory.id,
+        nextOrder
+      );
       
       toast.success("Ordem atualizada");
       loadCategories();
