@@ -208,21 +208,27 @@ export type Database = {
           email: string
           id: string
           menu_name: string | null
+          restaurant_address: string | null
           updated_at: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
           id: string
           menu_name?: string | null
+          restaurant_address?: string | null
           updated_at?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
           id?: string
           menu_name?: string | null
+          restaurant_address?: string | null
           updated_at?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
