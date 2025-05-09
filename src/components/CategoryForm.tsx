@@ -20,6 +20,7 @@ const CategoryForm = ({ category, onSubmit, onCancel }: CategoryFormProps) => {
     id: category?.id || 0,
     name: category?.name || "",
     isActive: category?.isActive !== undefined ? category.isActive : true,
+    order: category?.order || 0, // Add order property with default value
   });
 
   const isEditing = !!category;

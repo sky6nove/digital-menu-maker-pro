@@ -21,11 +21,11 @@ export const CategoryService = {
         id: cat.id,
         name: cat.name,
         isActive: cat.is_active,
-        order: cat.order || 0  // Make sure we handle the order properly
+        order: cat.order || 0  // Add default value for order if it doesn't exist
       }));
       
       // Sort by order
-      formattedCategories.sort((a, b) => (a.order || 0) - (b.order || 0));
+      formattedCategories.sort((a, b) => a.order - b.order);
       
       return formattedCategories;
     } catch (error: any) {
@@ -44,7 +44,7 @@ export const CategoryService = {
         .update({
           name: categoryData.name,
           is_active: categoryData.isActive,
-          order: categoryData.order || 0,  // Explicitly include order in the update
+          order: categoryData.order,  // Include order in the update
           updated_at: new Date().toISOString()
         })
         .eq("id", categoryData.id)
@@ -71,7 +71,7 @@ export const CategoryService = {
         .insert({
           name: categoryData.name,
           is_active: categoryData.isActive,
-          order: maxOrder,  // Make sure we're handling order properly
+          order: maxOrder,  // Set order using the maxOrder parameter
           user_id: userId
         });
         
@@ -112,7 +112,7 @@ export const CategoryService = {
       const { error } = await supabase
         .from("categories")
         .update({ 
-          order: newOrder  // Explicitly include order in the update
+          order: newOrder  // Update the order field
         })
         .eq("id", categoryId)
         .eq("user_id", userId);
@@ -138,13 +138,13 @@ export const CategoryService = {
       await Promise.all([
         supabase
           .from("categories")
-          .update({ order: category2Order })  // Explicitly include order in the update
+          .update({ order: category2Order })  // Update first category's order
           .eq("id", category1Id)
           .eq("user_id", userId),
           
         supabase
           .from("categories")
-          .update({ order: category1Order })  // Explicitly include order in the update
+          .update({ order: category1Order })  // Update second category's order
           .eq("id", category2Id)
           .eq("user_id", userId)
       ]);

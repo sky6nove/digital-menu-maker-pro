@@ -3,10 +3,10 @@ import { Product, Category } from "../types";
 
 // Initial mock data
 let categories: Category[] = [
-  { id: 1, name: "Hamburguers Simples", isActive: true },
-  { id: 2, name: "Hamburguers Especiais", isActive: true },
-  { id: 3, name: "Acompanhamentos", isActive: true },
-  { id: 4, name: "Bebidas", isActive: true },
+  { id: 1, name: "Hamburguers Simples", isActive: true, order: 0 },
+  { id: 2, name: "Hamburguers Especiais", isActive: true, order: 1 },
+  { id: 3, name: "Acompanhamentos", isActive: true, order: 2 },
+  { id: 4, name: "Bebidas", isActive: true, order: 3 },
 ];
 
 let products: Product[] = [

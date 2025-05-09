@@ -56,11 +56,11 @@ const Menu = () => {
         id: cat.id,
         name: cat.name,
         isActive: cat.is_active,
-        order: cat.order || 0  // Make sure we handle the order property
+        order: cat.order || 0  // Add default value for order if it doesn't exist
       }));
       
       // Sort categories by order
-      formattedCategories.sort((a, b) => (a.order || 0) - (b.order || 0));
+      formattedCategories.sort((a, b) => a.order - b.order);
       
       const formattedProducts: Product[] = productsData.map(prod => ({
         id: prod.id,
