@@ -21,7 +21,7 @@ export const CategoryService = {
         id: cat.id,
         name: cat.name,
         isActive: cat.is_active,
-        order: cat.order || 0
+        order: cat.order || 0  // Make sure we handle the order properly
       }));
       
       // Sort by order
@@ -44,7 +44,7 @@ export const CategoryService = {
         .update({
           name: categoryData.name,
           is_active: categoryData.isActive,
-          order: categoryData.order || 0,
+          order: categoryData.order || 0,  // Explicitly include order in the update
           updated_at: new Date().toISOString()
         })
         .eq("id", categoryData.id)
@@ -71,7 +71,7 @@ export const CategoryService = {
         .insert({
           name: categoryData.name,
           is_active: categoryData.isActive,
-          order: maxOrder,
+          order: maxOrder,  // Make sure we're handling order properly
           user_id: userId
         });
         
@@ -111,7 +111,9 @@ export const CategoryService = {
     try {
       const { error } = await supabase
         .from("categories")
-        .update({ order: newOrder })
+        .update({ 
+          order: newOrder  // Explicitly include order in the update
+        })
         .eq("id", categoryId)
         .eq("user_id", userId);
       
@@ -136,13 +138,13 @@ export const CategoryService = {
       await Promise.all([
         supabase
           .from("categories")
-          .update({ order: category2Order })
+          .update({ order: category2Order })  // Explicitly include order in the update
           .eq("id", category1Id)
           .eq("user_id", userId),
           
         supabase
           .from("categories")
-          .update({ order: category1Order })
+          .update({ order: category1Order })  // Explicitly include order in the update
           .eq("id", category2Id)
           .eq("user_id", userId)
       ]);

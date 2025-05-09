@@ -14,7 +14,7 @@ export interface Category {
   id: number;
   name: string;
   isActive: boolean;
-  order?: number; // Ensuring the order field is properly defined
+  order: number; // Explicitly define order as a required field with type number
 }
 
 export interface CartItem {

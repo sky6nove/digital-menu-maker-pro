@@ -56,7 +56,7 @@ const Menu = () => {
         id: cat.id,
         name: cat.name,
         isActive: cat.is_active,
-        order: cat.order || 0
+        order: cat.order || 0  // Make sure we handle the order property
       }));
       
       // Sort categories by order
