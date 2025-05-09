@@ -102,7 +102,9 @@ export const useProducts = (userId?: string) => {
         if (sizes && sizes.length > 0) {
           // First delete existing sizes
           const { error: deleteSizesError } = await supabase
-            .rpc("delete_product_sizes", { product_id_param: productData.id });
+            .from('product_sizes')
+            .delete()
+            .eq('product_id', productData.id);
             
           if (deleteSizesError) throw deleteSizesError;
           
