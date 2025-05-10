@@ -11,7 +11,7 @@ export const MenuService = {
         a.order - b.order
       );
       
-      const html = await MenuExporter.generateMenuHTML(products, sortedCategories, menuName, slogan, whatsappNumber, restaurantAddress);
+      const html = await MenuExporter.generateMenuHTML(sortedCategories, products, menuName, slogan, whatsappNumber, restaurantAddress);
       return html;
     } catch (error) {
       console.error("Error generating menu HTML:", error);
@@ -35,7 +35,7 @@ export const MenuService = {
         a.order - b.order
       );
       
-      const html = await MenuExporter.generateMenuHTML(products, sortedCategories, menuName, slogan, whatsappNumber, restaurantAddress);
+      const html = await MenuExporter.generateMenuHTML(sortedCategories, products, menuName, slogan, whatsappNumber, restaurantAddress);
       MenuExporter.downloadHTML(html, "cardapio-digital.html");
       toast.success("Cardápio exportado com sucesso");
     } catch (error) {
