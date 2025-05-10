@@ -1,6 +1,6 @@
 
 import { Product, Category } from "@/types";
-import MenuExporter from "./MenuExporter";
+import MenuExporter from "./menuExporter";
 import { toast } from "sonner";
 
 export const MenuService = {
