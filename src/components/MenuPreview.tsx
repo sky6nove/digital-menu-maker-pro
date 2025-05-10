@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Product, Category, CartItem } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ interface MenuPreviewProps {
   products: Product[];
   categories: Category[];
   menuName?: string;
+  slogan?: string;
   whatsappNumber?: string;
   restaurantAddress?: string;
 }
@@ -18,6 +18,7 @@ const MenuPreview = ({
   products, 
   categories, 
   menuName = "CARDÁPIO Burguers",
+  slogan = "Sabor sem igual!",
   whatsappNumber = "",
   restaurantAddress = ""
 }: MenuPreviewProps) => {
@@ -138,7 +139,7 @@ const MenuPreview = ({
       <div className="container max-w-4xl mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-menu-accent mb-2">{menuName}</h1>
-          <p className="text-menu-foreground opacity-75">Sabor sem igual!</p>
+          <p className="text-menu-foreground opacity-75">{slogan}</p>
         </div>
 
         {activeCategories.map((category) => {

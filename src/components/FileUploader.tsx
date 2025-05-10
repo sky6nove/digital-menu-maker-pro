@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +18,18 @@ interface FileUploaderProps {
 const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
-  const [imageUrl, setImageUrl] = useState(currentImageUrl || "");
+  const [imageUrl, setImageUrl] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [activeTab, setActiveTab] = useState<string>("upload");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Initialize with current image URL if provided
+  useEffect(() => {
+    if (currentImageUrl) {
+      setImageUrl(currentImageUrl);
+      setImageUrlInput(currentImageUrl);
+    }
+  }, [currentImageUrl]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -66,6 +74,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       } = supabase.storage.from("product-images").getPublicUrl(data.path);
 
       setImageUrl(publicUrl);
+      setImageUrlInput(publicUrl);
       onUploadComplete(publicUrl);
 
       toast({

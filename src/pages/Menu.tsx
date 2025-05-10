@@ -13,6 +13,7 @@ const Menu = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [menuName, setMenuName] = useState("CARDÁPIO Burguers");
+  const [slogan, setSlogan] = useState("Sabor sem igual!");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [restaurantAddress, setRestaurantAddress] = useState("");
 
@@ -35,6 +36,7 @@ const Menu = () => {
         
       if (!profileError && profileData) {
         setMenuName(profileData.menu_name || "CARDÁPIO Burguers");
+        setSlogan(profileData.slogan || "Sabor sem igual!");
         setWhatsappNumber(profileData.whatsapp_number || "");
         setRestaurantAddress(profileData.restaurant_address || "");
       }
@@ -105,7 +107,8 @@ const Menu = () => {
       <MenuPreview 
         products={products} 
         categories={categories} 
-        menuName={menuName} 
+        menuName={menuName}
+        slogan={slogan}
         whatsappNumber={whatsappNumber}
         restaurantAddress={restaurantAddress}
       />

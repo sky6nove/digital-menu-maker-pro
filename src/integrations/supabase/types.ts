@@ -209,6 +209,7 @@ export type Database = {
           id: string
           menu_name: string | null
           restaurant_address: string | null
+          slogan: string | null
           updated_at: string | null
           whatsapp_number: string | null
         }
@@ -218,6 +219,7 @@ export type Database = {
           id: string
           menu_name?: string | null
           restaurant_address?: string | null
+          slogan?: string | null
           updated_at?: string | null
           whatsapp_number?: string | null
         }
@@ -227,6 +229,7 @@ export type Database = {
           id?: string
           menu_name?: string | null
           restaurant_address?: string | null
+          slogan?: string | null
           updated_at?: string | null
           whatsapp_number?: string | null
         }

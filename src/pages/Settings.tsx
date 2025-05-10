@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 const Settings = () => {
   const { user } = useAuth();
   const [menuName, setMenuName] = useState("");
+  const [slogan, setSlogan] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [restaurantAddress, setRestaurantAddress] = useState("");
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,7 @@ const Settings = () => {
       
       if (data) {
         setMenuName(data.menu_name || "CARDÁPIO Burguers");
+        setSlogan(data.slogan || "Sabor sem igual!");
         setWhatsappNumber(data.whatsapp_number || "");
         setRestaurantAddress(data.restaurant_address || "");
       }
@@ -60,6 +62,7 @@ const Settings = () => {
         .from("profiles")
         .update({ 
           menu_name: menuName,
+          slogan: slogan,
           whatsapp_number: formattedWhatsApp,
           restaurant_address: restaurantAddress
         })
@@ -100,6 +103,20 @@ const Settings = () => {
                 onChange={(e) => setMenuName(e.target.value)}
                 disabled={loading}
               />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="slogan">Slogan</Label>
+              <Input
+                id="slogan"
+                placeholder="Slogan do seu estabelecimento"
+                value={slogan}
+                onChange={(e) => setSlogan(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Frase que aparece abaixo do nome do cardápio.
+              </p>
             </div>
             
             <div className="space-y-2">

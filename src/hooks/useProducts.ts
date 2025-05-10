@@ -31,7 +31,7 @@ export const useProducts = (userId?: string) => {
         price: prod.price,
         categoryId: prod.category_id || 0,
         isActive: prod.is_active,
-        image_url: prod.image_url,
+        image_url: prod.image_url || "",
         allow_half_half: prod.allow_half_half || false,
         half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
       }));
@@ -96,7 +96,12 @@ export const useProducts = (userId?: string) => {
           .select()
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Database error when updating product:", error);
+          throw error;
+        }
+        
+        console.log("Updated product data:", data);
         
         // Update or insert sizes if provided
         if (sizes && sizes.length > 0) {
@@ -133,14 +138,17 @@ export const useProducts = (userId?: string) => {
           price: data.price,
           categoryId: data.category_id || 0,
           isActive: data.is_active,
-          image_url: data.image_url,
+          image_url: data.image_url || "",
           allow_half_half: data.allow_half_half || false,
           half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
         };
         
+        loadProducts();
         return updatedProduct;
       } else {
         // Create new product
+        console.log("Creating new product with data:", productData);
+        
         const { data, error } = await supabase
           .from("products")
           .insert({
@@ -157,7 +165,12 @@ export const useProducts = (userId?: string) => {
           .select()
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Database error when creating product:", error);
+          throw error;
+        }
+        
+        console.log("Created product data:", data);
         
         // Insert sizes if provided
         if (sizes && sizes.length > 0) {
@@ -185,7 +198,7 @@ export const useProducts = (userId?: string) => {
           price: data.price,
           categoryId: data.category_id || 0,
           isActive: data.is_active,
-          image_url: data.image_url,
+          image_url: data.image_url || "",
           allow_half_half: data.allow_half_half || false,
           half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
         };
