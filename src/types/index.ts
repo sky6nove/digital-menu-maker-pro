@@ -14,7 +14,9 @@ export interface Category {
   id: number;
   name: string;
   isActive: boolean;
-  order: number; // Explicitly define order as a required field with type number
+  order: number;
+  allowHalfHalf?: boolean;
+  halfHalfPriceRule?: 'lowest' | 'highest' | 'average';
 }
 
 export interface CartItem {

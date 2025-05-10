@@ -21,7 +21,9 @@ export const CategoryService = {
         id: cat.id,
         name: cat.name,
         isActive: cat.is_active,
-        order: cat.order || 0  // Add default value for order if it doesn't exist
+        order: cat.order || 0,
+        allowHalfHalf: cat.allow_half_half || false,
+        halfHalfPriceRule: cat.half_half_price_rule || 'highest'
       }));
       
       // Sort by order
@@ -44,7 +46,9 @@ export const CategoryService = {
         .update({
           name: categoryData.name,
           is_active: categoryData.isActive,
-          order: categoryData.order,  // Include order in the update
+          order: categoryData.order,
+          allow_half_half: categoryData.allowHalfHalf || null,
+          half_half_price_rule: categoryData.halfHalfPriceRule || null,
           updated_at: new Date().toISOString()
         })
         .eq("id", categoryData.id)
@@ -71,7 +75,9 @@ export const CategoryService = {
         .insert({
           name: categoryData.name,
           is_active: categoryData.isActive,
-          order: maxOrder,  // Set order using the maxOrder parameter
+          order: maxOrder,
+          allow_half_half: categoryData.allowHalfHalf || null,
+          half_half_price_rule: categoryData.halfHalfPriceRule || null,
           user_id: userId
         });
         
