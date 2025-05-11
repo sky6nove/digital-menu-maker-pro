@@ -8,6 +8,11 @@ export interface Product {
   image_url?: string;
   allow_half_half?: boolean;
   half_half_price_rule?: 'lowest' | 'highest' | 'average';
+  pdvCode?: string;
+  productTypeId?: number;
+  dietaryRestrictions?: string[];
+  portionSize?: string;
+  servesCount?: number;
 }
 
 export interface Category {
@@ -17,6 +22,9 @@ export interface Category {
   order: number;
   allowHalfHalf?: boolean;
   halfHalfPriceRule?: 'lowest' | 'highest' | 'average';
+  categoryType: 'regular' | 'pizza';
+  hasPortions?: boolean;
+  portionsLabel?: string;
 }
 
 export interface CartItem {
@@ -102,4 +110,32 @@ export interface Subscription {
   current_period_end?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
+}
+
+export interface ProductType {
+  id: number;
+  name: string;
+  isActive: boolean;
+}
+
+export interface ComplementGroup {
+  id: number;
+  name: string;
+  groupType: 'ingredients' | 'specifications' | 'cross_sell' | 'disposables';
+  isActive: boolean;
+}
+
+export interface ComplementItem {
+  id: number;
+  groupId: number;
+  name: string;
+  price: number;
+  isActive: boolean;
+}
+
+export interface ProductComplementGroup {
+  id: number;
+  productId: number;
+  complementGroupId: number;
+  isRequired: boolean;
 }

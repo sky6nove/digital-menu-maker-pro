@@ -28,7 +28,11 @@ export const CategoryService = {
           order: cat.order || 0,
           // Safely handle potentially missing database columns
           allowHalfHalf: categoryRow.allow_half_half === true,
-          halfHalfPriceRule: (categoryRow.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest'
+          halfHalfPriceRule: (categoryRow.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest',
+          // Add new fields
+          categoryType: categoryRow.category_type || 'regular',
+          hasPortions: categoryRow.has_portions === true,
+          portionsLabel: categoryRow.portions_label || 'Serve'
         };
       });
       
@@ -55,6 +59,9 @@ export const CategoryService = {
           order: categoryData.order,
           allow_half_half: categoryData.allowHalfHalf === true ? true : null,
           half_half_price_rule: categoryData.halfHalfPriceRule || null,
+          category_type: categoryData.categoryType || 'regular',
+          has_portions: categoryData.hasPortions === true ? true : null,
+          portions_label: categoryData.portionsLabel || null,
           updated_at: new Date().toISOString()
         })
         .eq("id", categoryData.id)
@@ -84,6 +91,9 @@ export const CategoryService = {
           order: maxOrder,
           allow_half_half: categoryData.allowHalfHalf === true ? true : null,
           half_half_price_rule: categoryData.halfHalfPriceRule || null,
+          category_type: categoryData.categoryType || 'regular',
+          has_portions: categoryData.hasPortions === true ? true : null,
+          portions_label: categoryData.portionsLabel || null,
           user_id: userId
         });
         

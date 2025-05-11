@@ -11,33 +11,110 @@ export type Database = {
     Tables: {
       categories: {
         Row: {
+          category_type: string | null
           created_at: string | null
+          has_portions: boolean | null
           id: number
           is_active: boolean
           name: string
           order: number | null
+          portions_label: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category_type?: string | null
+          created_at?: string | null
+          has_portions?: boolean | null
+          id?: number
+          is_active?: boolean
+          name: string
+          order?: number | null
+          portions_label?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category_type?: string | null
+          created_at?: string | null
+          has_portions?: boolean | null
+          id?: number
+          is_active?: boolean
+          name?: string
+          order?: number | null
+          portions_label?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      complement_groups: {
+        Row: {
+          created_at: string | null
+          group_type: string
+          id: number
+          is_active: boolean
+          name: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
+          group_type: string
           id?: number
           is_active?: boolean
           name: string
-          order?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
+          group_type?: string
           id?: number
           is_active?: boolean
           name?: string
-          order?: number | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: []
+      }
+      complement_items: {
+        Row: {
+          created_at: string | null
+          group_id: number
+          id: number
+          is_active: boolean
+          name: string
+          price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          group_id: number
+          id?: number
+          is_active?: boolean
+          name: string
+          price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: number
+          id?: number
+          is_active?: boolean
+          name?: string
+          price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complement_items_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "complement_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       complements: {
         Row: {
@@ -71,6 +148,45 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      product_complement_groups: {
+        Row: {
+          complement_group_id: number
+          created_at: string | null
+          id: number
+          is_required: boolean | null
+          product_id: number
+        }
+        Insert: {
+          complement_group_id: number
+          created_at?: string | null
+          id?: number
+          is_required?: boolean | null
+          product_id: number
+        }
+        Update: {
+          complement_group_id?: number
+          created_at?: string | null
+          id?: number
+          is_required?: boolean | null
+          product_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_complement_groups_complement_group_id_fkey"
+            columns: ["complement_group_id"]
+            isOneToOne: false
+            referencedRelation: "complement_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_complement_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_complements: {
         Row: {
@@ -149,18 +265,50 @@ export type Database = {
           },
         ]
       }
+      product_types: {
+        Row: {
+          created_at: string | null
+          id: number
+          is_active: boolean
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          is_active?: boolean
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          is_active?: boolean
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           allow_half_half: boolean | null
           category_id: number | null
           created_at: string | null
           description: string | null
+          dietary_restrictions: string[] | null
           half_half_price_rule: string | null
           id: number
           image_url: string | null
           is_active: boolean
           name: string
+          pdv_code: string | null
+          portion_size: string | null
           price: number
+          product_type_id: number | null
+          serves_count: number | null
           updated_at: string | null
           user_id: string
         }
@@ -169,12 +317,17 @@ export type Database = {
           category_id?: number | null
           created_at?: string | null
           description?: string | null
+          dietary_restrictions?: string[] | null
           half_half_price_rule?: string | null
           id?: number
           image_url?: string | null
           is_active?: boolean
           name: string
+          pdv_code?: string | null
+          portion_size?: string | null
           price: number
+          product_type_id?: number | null
+          serves_count?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -183,12 +336,17 @@ export type Database = {
           category_id?: number | null
           created_at?: string | null
           description?: string | null
+          dietary_restrictions?: string[] | null
           half_half_price_rule?: string | null
           id?: number
           image_url?: string | null
           is_active?: boolean
           name?: string
+          pdv_code?: string | null
+          portion_size?: string | null
           price?: number
+          product_type_id?: number | null
+          serves_count?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -198,6 +356,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_product_type_id_fkey"
+            columns: ["product_type_id"]
+            isOneToOne: false
+            referencedRelation: "product_types"
             referencedColumns: ["id"]
           },
         ]
