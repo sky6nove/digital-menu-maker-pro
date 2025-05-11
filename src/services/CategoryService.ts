@@ -22,8 +22,9 @@ export const CategoryService = {
         name: cat.name,
         isActive: cat.is_active,
         order: cat.order || 0,
-        allowHalfHalf: cat.allow_half_half || false,
-        halfHalfPriceRule: cat.half_half_price_rule || 'highest'
+        // Safely handle potentially missing database columns
+        allowHalfHalf: cat.allow_half_half === true,
+        halfHalfPriceRule: (cat.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest'
       }));
       
       // Sort by order
@@ -47,7 +48,7 @@ export const CategoryService = {
           name: categoryData.name,
           is_active: categoryData.isActive,
           order: categoryData.order,
-          allow_half_half: categoryData.allowHalfHalf || null,
+          allow_half_half: categoryData.allowHalfHalf === true ? true : null,
           half_half_price_rule: categoryData.halfHalfPriceRule || null,
           updated_at: new Date().toISOString()
         })
@@ -76,7 +77,7 @@ export const CategoryService = {
           name: categoryData.name,
           is_active: categoryData.isActive,
           order: maxOrder,
-          allow_half_half: categoryData.allowHalfHalf || null,
+          allow_half_half: categoryData.allowHalfHalf === true ? true : null,
           half_half_price_rule: categoryData.halfHalfPriceRule || null,
           user_id: userId
         });
