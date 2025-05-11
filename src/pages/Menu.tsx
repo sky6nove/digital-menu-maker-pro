@@ -62,7 +62,12 @@ const Menu = () => {
         id: cat.id,
         name: cat.name,
         isActive: cat.is_active,
-        order: cat.order || 0  // Add default value for order if it doesn't exist
+        order: cat.order || 0,
+        categoryType: cat.category_type || 'regular',
+        allowHalfHalf: cat.allow_half_half || false,
+        halfHalfPriceRule: cat.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
+        hasPortions: cat.has_portions || false,
+        portionsLabel: cat.portions_label || 'Serve'
       }));
       
       // Sort categories by order
@@ -77,7 +82,12 @@ const Menu = () => {
         isActive: prod.is_active,
         image_url: prod.image_url,
         allow_half_half: prod.allow_half_half || false,
-        half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+        half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
+        pdvCode: prod.pdv_code,
+        productTypeId: prod.product_type_id,
+        dietaryRestrictions: prod.dietary_restrictions,
+        portionSize: prod.portion_size,
+        servesCount: prod.serves_count
       }));
       
       setCategories(formattedCategories);
