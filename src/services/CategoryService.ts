@@ -17,15 +17,20 @@ export const CategoryService = {
       if (categoriesError) throw categoriesError;
       
       // Transform to match our existing interfaces
-      const formattedCategories: Category[] = categoriesData.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        isActive: cat.is_active,
-        order: cat.order || 0,
-        // Safely handle potentially missing database columns
-        allowHalfHalf: cat.allow_half_half === true,
-        halfHalfPriceRule: (cat.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest'
-      }));
+      const formattedCategories: Category[] = categoriesData.map(cat => {
+        // Using type assertion to handle potentially missing fields
+        const categoryRow = cat as any;
+        
+        return {
+          id: cat.id,
+          name: cat.name,
+          isActive: cat.is_active,
+          order: cat.order || 0,
+          // Safely handle potentially missing database columns
+          allowHalfHalf: categoryRow.allow_half_half === true,
+          halfHalfPriceRule: (categoryRow.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest'
+        };
+      });
       
       // Sort by order
       formattedCategories.sort((a, b) => a.order - b.order);
