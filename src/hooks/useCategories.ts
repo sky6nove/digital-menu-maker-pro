@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Category } from "@/types";
 import { toast } from "sonner";
@@ -57,11 +56,16 @@ export const useCategories = (userId?: string) => {
   };
 
   const handleSubmitCategory = async (categoryData: Omit<Category, "id"> | Category) => {
+    if (!userId) {
+      console.error("No user ID available, cannot save category");
+      throw new Error("Usuário não identificado");
+    }
+    
     try {
       if ("id" in categoryData && categoryData.id > 0) {
         // Update existing category
-        await CategoryService.updateCategory(userId!, categoryData as Category);
-        toast.success("Categoria atualizada com sucesso");
+        console.log("Updating category:", categoryData);
+        await CategoryService.updateCategory(userId, categoryData as Category);
       } else {
         // Get max order
         const maxOrder = categories.length > 0 
@@ -69,14 +73,15 @@ export const useCategories = (userId?: string) => {
           : 0;
           
         // Create new category
-        await CategoryService.createCategory(userId!, categoryData, maxOrder);
-        toast.success("Categoria adicionada com sucesso");
+        console.log("Creating category:", categoryData, "with maxOrder:", maxOrder);
+        await CategoryService.createCategory(userId, categoryData, maxOrder);
       }
-      setIsCategoryFormOpen(false);
-      loadCategories();
+      
+      await loadCategories(); // Refresh the categories list
+      return true;
     } catch (error: any) {
-      toast.error("Erro ao salvar categoria");
-      console.error("Error saving category:", error);
+      console.error("Error in handleSubmitCategory:", error);
+      throw error; // Re-throw to allow the component to handle
     }
   };
 

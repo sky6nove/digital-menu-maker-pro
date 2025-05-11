@@ -81,11 +81,13 @@ const Categories = () => {
 
   const handleFormSubmit = async (categoryData: any) => {
     try {
+      console.log("Form submitting with data:", categoryData);
       await handleSubmitCategory(categoryData);
       toast.success(categoryData.id ? "Categoria atualizada" : "Categoria adicionada");
-    } catch (error) {
+      setIsCategoryFormOpen(false); // Close form after successful save
+    } catch (error: any) {
       console.error("Error saving category:", error);
-      toast.error("Erro ao salvar categoria");
+      toast.error(`Erro ao salvar categoria: ${error.message || "Contate o suporte"}`);
     }
   };
 

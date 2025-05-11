@@ -18,21 +18,18 @@ export const CategoryService = {
       
       // Transform to match our existing interfaces
       const formattedCategories: Category[] = categoriesData.map(cat => {
-        // Using type assertion to handle potentially missing fields
-        const categoryRow = cat as any;
-        
         return {
           id: cat.id,
           name: cat.name,
           isActive: cat.is_active,
           order: cat.order || 0,
-          // Safely handle potentially missing database columns
-          allowHalfHalf: categoryRow.allow_half_half === true,
-          halfHalfPriceRule: (categoryRow.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest',
+          // Now these fields exist in the database
+          allowHalfHalf: cat.allow_half_half || false,
+          halfHalfPriceRule: (cat.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest',
           // Add new fields
-          categoryType: categoryRow.category_type || 'regular',
-          hasPortions: categoryRow.has_portions === true,
-          portionsLabel: categoryRow.portions_label || 'Serve'
+          categoryType: cat.category_type || 'regular',
+          hasPortions: cat.has_portions === true,
+          portionsLabel: cat.portions_label || 'Serve'
         };
       });
       
@@ -51,23 +48,28 @@ export const CategoryService = {
    */
   updateCategory: async (userId: string, categoryData: Category): Promise<void> => {
     try {
+      console.log("Updating category with data:", categoryData);
+      
       const { error } = await supabase
         .from("categories")
         .update({
           name: categoryData.name,
           is_active: categoryData.isActive,
           order: categoryData.order,
-          allow_half_half: categoryData.allowHalfHalf === true ? true : null,
-          half_half_price_rule: categoryData.halfHalfPriceRule || null,
+          allow_half_half: categoryData.allowHalfHalf,
+          half_half_price_rule: categoryData.halfHalfPriceRule,
           category_type: categoryData.categoryType || 'regular',
-          has_portions: categoryData.hasPortions === true ? true : null,
+          has_portions: categoryData.hasPortions,
           portions_label: categoryData.portionsLabel || null,
           updated_at: new Date().toISOString()
         })
         .eq("id", categoryData.id)
         .eq("user_id", userId);
         
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error updating category:", error);
+        throw error;
+      }
     } catch (error: any) {
       console.error("Error updating category:", error);
       throw error;
@@ -83,21 +85,26 @@ export const CategoryService = {
     maxOrder: number
   ): Promise<void> => {
     try {
+      console.log("Creating category with data:", categoryData, "maxOrder:", maxOrder);
+      
       const { error } = await supabase
         .from("categories")
         .insert({
           name: categoryData.name,
           is_active: categoryData.isActive,
           order: maxOrder,
-          allow_half_half: categoryData.allowHalfHalf === true ? true : null,
-          half_half_price_rule: categoryData.halfHalfPriceRule || null,
+          allow_half_half: categoryData.allowHalfHalf,
+          half_half_price_rule: categoryData.halfHalfPriceRule,
           category_type: categoryData.categoryType || 'regular',
-          has_portions: categoryData.hasPortions === true ? true : null,
+          has_portions: categoryData.hasPortions,
           portions_label: categoryData.portionsLabel || null,
           user_id: userId
         });
         
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error creating category:", error);
+        throw error;
+      }
     } catch (error: any) {
       console.error("Error creating category:", error);
       throw error;

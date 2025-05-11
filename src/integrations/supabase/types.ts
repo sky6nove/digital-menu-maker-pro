@@ -11,8 +11,10 @@ export type Database = {
     Tables: {
       categories: {
         Row: {
+          allow_half_half: boolean | null
           category_type: string | null
           created_at: string | null
+          half_half_price_rule: string | null
           has_portions: boolean | null
           id: number
           is_active: boolean
@@ -23,8 +25,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allow_half_half?: boolean | null
           category_type?: string | null
           created_at?: string | null
+          half_half_price_rule?: string | null
           has_portions?: boolean | null
           id?: number
           is_active?: boolean
@@ -35,8 +39,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allow_half_half?: boolean | null
           category_type?: string | null
           created_at?: string | null
+          half_half_price_rule?: string | null
           has_portions?: boolean | null
           id?: number
           is_active?: boolean
