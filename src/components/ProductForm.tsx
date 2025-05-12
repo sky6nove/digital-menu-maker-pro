@@ -96,13 +96,15 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
       if (complementsError) throw complementsError;
       
       if (complementsData) {
-        // Convert the data to match our Complement interface
+        // Map the data to match our Complement interface
         const formattedComplements: Complement[] = complementsData.map((comp: any) => ({
           id: comp.id,
           name: comp.name,
           price: comp.price,
           image_url: comp.image_url,
-          is_active: comp.is_active
+          isActive: comp.is_active, // Map is_active to isActive
+          hasStockControl: comp.has_stock_control,
+          stockQuantity: comp.stock_quantity
         }));
         
         setAvailableComplements(formattedComplements);

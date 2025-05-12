@@ -42,7 +42,18 @@ export const useDataHelpers = () => {
       return [];
     }
     
-    return data || [];
+    // Map the database fields to our interface structure
+    const mappedComplements: Complement[] = (data || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      image_url: item.image_url,
+      isActive: item.is_active, // Map is_active to isActive
+      hasStockControl: item.has_stock_control,
+      stockQuantity: item.stock_quantity
+    }));
+    
+    return mappedComplements;
   };
   
   // Get complements for a specific product
