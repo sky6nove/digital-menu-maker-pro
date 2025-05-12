@@ -43,7 +43,10 @@ const ComplementGroups = () => {
         name: group.name,
         groupType: group.group_type as 'ingredients' | 'specifications' | 'cross_sell' | 'disposables',
         isActive: group.is_active,
-        imageUrl: group.image_url || undefined
+        imageUrl: group.image_url || undefined,
+        minimumQuantity: group.minimum_quantity || 0,
+        maximumQuantity: group.maximum_quantity || 0,
+        isRequired: group.is_required || false
       }));
       
       setComplementGroups(formattedGroups);
@@ -96,6 +99,9 @@ const ComplementGroups = () => {
             group_type: groupData.groupType,
             is_active: groupData.isActive,
             image_url: groupData.imageUrl || null,
+            minimum_quantity: groupData.minimumQuantity || 0,
+            maximum_quantity: groupData.maximumQuantity || 0,
+            is_required: groupData.isRequired || false,
             updated_at: new Date().toISOString()
           })
           .eq("id", groupData.id)
@@ -113,6 +119,9 @@ const ComplementGroups = () => {
             group_type: groupData.groupType,
             is_active: groupData.isActive,
             image_url: groupData.imageUrl || null,
+            minimum_quantity: groupData.minimumQuantity || 0,
+            maximum_quantity: groupData.maximumQuantity || 0,
+            is_required: groupData.isRequired || false,
             user_id: user?.id
           });
           
@@ -174,6 +183,25 @@ const ComplementGroups = () => {
                               group.groupType === 'specifications' ? 'Especificações' :
                               group.groupType === 'cross_sell' ? 'Venda cruzada' : 'Descartáveis'}
                       </CardDescription>
+                      {(group.minimumQuantity > 0 || group.maximumQuantity > 0 || group.isRequired) && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {group.isRequired && (
+                            <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800 border-red-200">
+                              Obrigatório
+                            </span>
+                          )}
+                          {group.minimumQuantity > 0 && (
+                            <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 border-blue-200">
+                              Min: {group.minimumQuantity}
+                            </span>
+                          )}
+                          {group.maximumQuantity > 0 && (
+                            <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800 border-green-200">
+                              Max: {group.maximumQuantity}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {group.imageUrl && (
                       <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-100">

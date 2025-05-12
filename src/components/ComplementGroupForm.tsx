@@ -21,7 +21,10 @@ const ComplementGroupForm = ({ group, onSubmit, onCancel }: ComplementGroupFormP
     name: group?.name || "",
     groupType: group?.groupType || "ingredients",
     isActive: group?.isActive !== undefined ? group.isActive : true,
-    imageUrl: group?.imageUrl || ""
+    imageUrl: group?.imageUrl || "",
+    minimumQuantity: group?.minimumQuantity || 0,
+    maximumQuantity: group?.maximumQuantity || 0,
+    isRequired: group?.isRequired || false
   });
 
   const isEditing = !!group;
@@ -29,6 +32,11 @@ const ComplementGroupForm = ({ group, onSubmit, onCancel }: ComplementGroupFormP
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: parseInt(value) || 0 });
   };
 
   const handleTypeChange = (value: string) => {
@@ -42,6 +50,10 @@ const ComplementGroupForm = ({ group, onSubmit, onCancel }: ComplementGroupFormP
     setFormData({ ...formData, isActive: checked });
   };
 
+  const handleRequiredChange = (checked: boolean) => {
+    setFormData({ ...formData, isRequired: checked });
+  };
+
   const handleImageUpload = (url: string) => {
     setFormData({ ...formData, imageUrl: url });
   };
@@ -51,6 +63,12 @@ const ComplementGroupForm = ({ group, onSubmit, onCancel }: ComplementGroupFormP
     
     if (!formData.name.trim()) {
       alert("Nome do grupo é obrigatório");
+      return;
+    }
+    
+    // Validate minimum and maximum quantities
+    if (formData.maximumQuantity > 0 && formData.maximumQuantity < formData.minimumQuantity) {
+      alert("Quantidade máxima deve ser maior ou igual à quantidade mínima");
       return;
     }
     
@@ -94,6 +112,34 @@ const ComplementGroupForm = ({ group, onSubmit, onCancel }: ComplementGroupFormP
             </Select>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="minimumQuantity">Quantidade mínima</Label>
+              <Input
+                id="minimumQuantity"
+                name="minimumQuantity"
+                type="number"
+                min="0"
+                value={formData.minimumQuantity}
+                onChange={handleNumberChange}
+              />
+              <p className="text-xs text-muted-foreground">Mínimo de itens que o cliente deve escolher (0 = opcional)</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="maximumQuantity">Quantidade máxima</Label>
+              <Input
+                id="maximumQuantity"
+                name="maximumQuantity"
+                type="number"
+                min="0"
+                value={formData.maximumQuantity}
+                onChange={handleNumberChange}
+              />
+              <p className="text-xs text-muted-foreground">Máximo de itens que o cliente pode escolher (0 = ilimitado)</p>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Imagem do Grupo</Label>
             <FileUploader 
@@ -109,6 +155,16 @@ const ComplementGroupForm = ({ group, onSubmit, onCancel }: ComplementGroupFormP
               onCheckedChange={handleStatusChange}
             />
             <Label htmlFor="isActive">Grupo ativo</Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="isRequired"
+              checked={formData.isRequired}
+              onCheckedChange={handleRequiredChange}
+            />
+            <Label htmlFor="isRequired">Obrigatório escolher</Label>
+            <span className="text-xs text-muted-foreground ml-2">(Cliente deve escolher os complementos deste grupo)</span>
           </div>
         </CardContent>
         

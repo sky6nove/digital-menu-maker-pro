@@ -1,3 +1,4 @@
+
 export interface Product {
   id: number;
   name: string;
@@ -71,6 +72,9 @@ export interface ComplementGroup {
   groupType: 'ingredients' | 'specifications' | 'cross_sell' | 'disposables';
   isActive: boolean;
   imageUrl?: string;
+  minimumQuantity?: number;
+  maximumQuantity?: number;
+  isRequired?: boolean;
 }
 
 export interface ProductComplement {
@@ -136,6 +140,8 @@ export interface ComplementItem {
   name: string;
   price: number;
   isActive: boolean;
+  productId?: number;
+  product?: Product;
 }
 
 export interface ProductComplementGroup {
