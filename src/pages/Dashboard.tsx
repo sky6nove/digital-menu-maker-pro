@@ -1,19 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import ProductTable from "@/components/ProductTable";
-import ProductForm from "@/components/ProductForm";
-import CategoryTable from "@/components/CategoryTable";
-import CategoryForm from "@/components/CategoryForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Download, Eye, ArrowUp, ArrowDown } from "lucide-react";
 import AuthNavbar from "@/components/AuthNavbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import MenuService from "@/services/MenuService";
+import ProductForm from "@/components/ProductForm";
+import CategoryForm from "@/components/CategoryForm";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -299,6 +297,9 @@ const Dashboard = () => {
         {/* Product Form Dialog */}
         <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
           <DialogContent className="sm:max-w-[500px]">
+            <DialogTitle>
+              {currentProduct?.id ? 'Editar Produto' : 'Adicionar Produto'}
+            </DialogTitle>
             <ProductForm
               product={currentProduct}
               categories={categories}
@@ -311,6 +312,9 @@ const Dashboard = () => {
         {/* Category Form Dialog */}
         <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
           <DialogContent className="sm:max-w-[500px]">
+            <DialogTitle>
+              {currentCategory?.id ? 'Editar Categoria' : 'Adicionar Categoria'}
+            </DialogTitle>
             <CategoryForm
               category={currentCategory}
               onSubmit={handleSubmitCategory}

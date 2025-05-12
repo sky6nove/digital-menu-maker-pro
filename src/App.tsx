@@ -20,7 +20,15 @@ import ComplementGroups from "@/pages/ComplementGroups";
 import "@/App.css";
 
 // Create QueryClient
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 function App() {
   return (

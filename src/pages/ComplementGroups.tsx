@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import AuthNavbar from "@/components/AuthNavbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Image, Edit, Trash } from "lucide-react";
@@ -257,6 +257,9 @@ const ComplementGroups = () => {
         
         <Dialog open={isGroupFormOpen} onOpenChange={setIsGroupFormOpen}>
           <DialogContent className="sm:max-w-[500px]">
+            <DialogTitle>
+              {currentGroup ? 'Editar Grupo de Complementos' : 'Adicionar Grupo de Complementos'}
+            </DialogTitle>
             <ComplementGroupForm
               group={currentGroup}
               onSubmit={handleSubmitGroup}
