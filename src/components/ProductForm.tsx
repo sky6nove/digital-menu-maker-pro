@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Product, Category, ProductSize, Complement, ProductComplement } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import FileUploader from "./FileUploader";
-import { Plus, Trash, DollarSign } from "lucide-react";
+import { Plus, Trash, DollarSign, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -37,6 +36,8 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
     image_url: product?.image_url || "",
     allow_half_half: product?.allow_half_half || false,
     half_half_price_rule: product?.half_half_price_rule || "highest",
+    hasStockControl: product?.hasStockControl || false,
+    stockQuantity: product?.stockQuantity || 0,
   });
   
   const [sizes, setSizes] = useState<ProductSize[]>([]);
@@ -346,6 +347,17 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
     }
   };
 
+  const handleHasStockControlChange = (checked: boolean) => {
+    setFormData({ ...formData, hasStockControl: checked });
+  };
+
+  const handleStockQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      setFormData({ ...formData, stockQuantity: value });
+    }
+  };
+
   return (
     <Card className="w-full mx-auto">
       <CardHeader>
@@ -357,6 +369,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
             <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
             <TabsTrigger value="images">Imagens</TabsTrigger>
             <TabsTrigger value="sizes">Tamanhos</TabsTrigger>
+            <TabsTrigger value="stock">Estoque</TabsTrigger>
             {formData.categoryId && categories.find(c => c.id === formData.categoryId)?.name.toLowerCase().includes("pizza") && (
               <TabsTrigger value="pizzaOptions">Opções de Pizza</TabsTrigger>
             )}
@@ -515,6 +528,36 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Tamanho
                   </Button>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="stock" className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="hasStockControl"
+                  checked={formData.hasStockControl}
+                  onCheckedChange={handleHasStockControlChange}
+                />
+                <Label htmlFor="hasStockControl">Habilitar controle de estoque</Label>
+              </div>
+              
+              {formData.hasStockControl && (
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="stockQuantity">Quantidade em estoque</Label>
+                  <div className="relative">
+                    <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Input
+                      id="stockQuantity"
+                      name="stockQuantity"
+                      type="number"
+                      min="0"
+                      value={formData.stockQuantity}
+                      onChange={handleStockQuantityChange}
+                      placeholder="0"
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
               )}
             </TabsContent>

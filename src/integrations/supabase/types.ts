@@ -59,6 +59,7 @@ export type Database = {
           created_at: string | null
           group_type: string
           id: number
+          image_url: string | null
           is_active: boolean
           name: string
           updated_at: string | null
@@ -68,6 +69,7 @@ export type Database = {
           created_at?: string | null
           group_type: string
           id?: number
+          image_url?: string | null
           is_active?: boolean
           name: string
           updated_at?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           created_at?: string | null
           group_type?: string
           id?: number
+          image_url?: string | null
           is_active?: boolean
           name?: string
           updated_at?: string | null
@@ -125,31 +128,37 @@ export type Database = {
       complements: {
         Row: {
           created_at: string | null
+          has_stock_control: boolean | null
           id: number
           image_url: string | null
           is_active: boolean
           name: string
           price: number
+          stock_quantity: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
+          has_stock_control?: boolean | null
           id?: number
           image_url?: string | null
           is_active?: boolean
           name: string
           price: number
+          stock_quantity?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
+          has_stock_control?: boolean | null
           id?: number
           image_url?: string | null
           is_active?: boolean
           name?: string
           price?: number
+          stock_quantity?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -306,6 +315,7 @@ export type Database = {
           description: string | null
           dietary_restrictions: string[] | null
           half_half_price_rule: string | null
+          has_stock_control: boolean | null
           id: number
           image_url: string | null
           is_active: boolean
@@ -315,6 +325,7 @@ export type Database = {
           price: number
           product_type_id: number | null
           serves_count: number | null
+          stock_quantity: number | null
           updated_at: string | null
           user_id: string
         }
@@ -325,6 +336,7 @@ export type Database = {
           description?: string | null
           dietary_restrictions?: string[] | null
           half_half_price_rule?: string | null
+          has_stock_control?: boolean | null
           id?: number
           image_url?: string | null
           is_active?: boolean
@@ -334,6 +346,7 @@ export type Database = {
           price: number
           product_type_id?: number | null
           serves_count?: number | null
+          stock_quantity?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -344,6 +357,7 @@ export type Database = {
           description?: string | null
           dietary_restrictions?: string[] | null
           half_half_price_rule?: string | null
+          has_stock_control?: boolean | null
           id?: number
           image_url?: string | null
           is_active?: boolean
@@ -353,6 +367,7 @@ export type Database = {
           price?: number
           product_type_id?: number | null
           serves_count?: number | null
+          stock_quantity?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -456,11 +471,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           created_at: string | null
+          has_stock_control: boolean | null
           id: number
           image_url: string | null
           is_active: boolean
           name: string
           price: number
+          stock_quantity: number | null
           updated_at: string | null
           user_id: string
         }[]

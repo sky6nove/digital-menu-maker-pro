@@ -1,9 +1,7 @@
 
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,128 +10,157 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Menu, Home, Settings, LogOut, Coffee, CreditCard } from "lucide-react";
+import { Menu, User, LogOut, Package } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AuthNavbar = () => {
   const { user, signOut } = useAuth();
-  const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const routes = [
-    { path: "/", label: "Dashboard", icon: Home },
-    { path: "/menu", label: "Cardápio", icon: Coffee },
-    { path: "/settings", label: "Configurações", icon: Settings },
-    { path: "/subscription", label: "Assinatura", icon: CreditCard },
-  ];
-
-  const getUserInitials = () => {
-    if (!user?.email) return "U";
-    return user.email.slice(0, 2).toUpperCase();
-  };
-
-  const closeMenu = () => {
-    setIsMenuOpen(false);
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
   };
 
   return (
-    <header className="border-b bg-background sticky top-0 z-50">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild className="lg:hidden">
-              <Button variant="outline" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-              <SheetHeader className="mb-4">
-                <SheetTitle>Menu</SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col gap-2">
-                {routes.map((route) => {
-                  const Icon = route.icon;
-                  return (
-                    <Link
-                      key={route.path}
-                      to={route.path}
-                      className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
-                        location.pathname === route.path
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted"
-                      }`}
-                      onClick={closeMenu}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {route.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </SheetContent>
-          </Sheet>
+    <header className="bg-white border-b shadow-sm">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Link to="/dashboard" className="font-bold text-xl text-primary">
+              CardápioDG
+            </Link>
 
-          <Link to="/" className="font-bold text-xl flex items-center">
-            Cardápio Digital
-          </Link>
+            <nav className="hidden md:flex items-center space-x-4">
+              <Link
+                to="/dashboard"
+                className="text-gray-600 hover:text-primary transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/menu"
+                className="text-gray-600 hover:text-primary transition-colors"
+              >
+                Cardápio
+              </Link>
+              <Link
+                to="/categories"
+                className="text-gray-600 hover:text-primary transition-colors"
+              >
+                Categorias
+              </Link>
+              <Link
+                to="/complement-groups"
+                className="text-gray-600 hover:text-primary transition-colors"
+              >
+                Complementos
+              </Link>
+              <Link
+                to="/settings"
+                className="text-gray-600 hover:text-primary transition-colors"
+              >
+                Configurações
+              </Link>
+            </nav>
+          </div>
 
-          <nav className="hidden lg:flex gap-2">
-            {routes.map((route) => {
-              const Icon = route.icon;
-              return (
-                <Link
-                  key={route.path}
-                  to={route.path}
-                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
-                    location.pathname === route.path
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {route.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="hidden md:flex items-center space-x-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative rounded-full h-9 w-9 p-0">
+                  <span className="sr-only">Abrir menu</span>
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/settings")}>
+                  Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/subscription")}>
+                  Assinatura
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(!isOpen)}
+              className="relative rounded-full h-9 w-9 p-0"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>{getUserInitials()}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/settings" className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Configurações</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/subscription" className="cursor-pointer">
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Assinatura</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={signOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isOpen && (
+          <div className="md:hidden mt-4 space-y-4 pb-2">
+            <Link
+              to="/dashboard"
+              onClick={() => setIsOpen(false)}
+              className="block text-gray-600 hover:text-primary transition-colors"
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/menu"
+              onClick={() => setIsOpen(false)}
+              className="block text-gray-600 hover:text-primary transition-colors"
+            >
+              Cardápio
+            </Link>
+            <Link
+              to="/categories"
+              onClick={() => setIsOpen(false)}
+              className="block text-gray-600 hover:text-primary transition-colors"
+            >
+              Categorias
+            </Link>
+            <Link
+              to="/complement-groups"
+              onClick={() => setIsOpen(false)}
+              className="block text-gray-600 hover:text-primary transition-colors"
+            >
+              <Package className="h-4 w-4 inline-block mr-1" />
+              Complementos
+            </Link>
+            <Link
+              to="/settings"
+              onClick={() => setIsOpen(false)}
+              className="block text-gray-600 hover:text-primary transition-colors"
+            >
+              Configurações
+            </Link>
+            <Link
+              to="/subscription"
+              onClick={() => setIsOpen(false)}
+              className="block text-gray-600 hover:text-primary transition-colors"
+            >
+              Assinatura
+            </Link>
+            <button
+              onClick={() => {
+                handleSignOut();
+                setIsOpen(false);
+              }}
+              className="block text-gray-600 hover:text-primary transition-colors"
+            >
+              <LogOut className="h-4 w-4 inline-block mr-1" />
+              Sair
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

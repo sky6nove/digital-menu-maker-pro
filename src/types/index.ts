@@ -13,6 +13,8 @@ export interface Product {
   dietaryRestrictions?: string[];
   portionSize?: string;
   servesCount?: number;
+  hasStockControl?: boolean;
+  stockQuantity?: number;
 }
 
 export interface Category {
@@ -58,7 +60,17 @@ export interface Complement {
   name: string;
   price: number;
   image_url?: string;
-  is_active: boolean;
+  isActive: boolean;
+  hasStockControl?: boolean;
+  stockQuantity?: number;
+}
+
+export interface ComplementGroup {
+  id: number;
+  name: string;
+  groupType: 'ingredients' | 'specifications' | 'cross_sell' | 'disposables';
+  isActive: boolean;
+  imageUrl?: string;
 }
 
 export interface ProductComplement {
@@ -115,13 +127,6 @@ export interface Subscription {
 export interface ProductType {
   id: number;
   name: string;
-  isActive: boolean;
-}
-
-export interface ComplementGroup {
-  id: number;
-  name: string;
-  groupType: 'ingredients' | 'specifications' | 'cross_sell' | 'disposables';
   isActive: boolean;
 }
 

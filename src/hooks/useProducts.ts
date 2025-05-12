@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Product, ProductSize } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +32,9 @@ export const useProducts = (userId?: string) => {
         isActive: prod.is_active,
         image_url: prod.image_url || "",
         allow_half_half: prod.allow_half_half || false,
-        half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+        half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
+        hasStockControl: prod.has_stock_control || false,
+        stockQuantity: prod.stock_quantity || 0
       }));
       
       setProducts(formattedProducts);
@@ -89,6 +90,8 @@ export const useProducts = (userId?: string) => {
             image_url: productData.image_url || null,
             allow_half_half: productData.allow_half_half || false,
             half_half_price_rule: productData.half_half_price_rule || 'highest',
+            has_stock_control: productData.hasStockControl || false,
+            stock_quantity: productData.stockQuantity || 0,
             updated_at: new Date().toISOString()
           })
           .eq("id", productData.id)
@@ -100,8 +103,6 @@ export const useProducts = (userId?: string) => {
           console.error("Database error when updating product:", error);
           throw error;
         }
-        
-        console.log("Updated product data:", data);
         
         // Update or insert sizes if provided
         if (sizes && sizes.length > 0) {
@@ -140,7 +141,9 @@ export const useProducts = (userId?: string) => {
           isActive: data.is_active,
           image_url: data.image_url || "",
           allow_half_half: data.allow_half_half || false,
-          half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+          half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
+          hasStockControl: data.has_stock_control || false,
+          stockQuantity: data.stock_quantity || 0
         };
         
         loadProducts();
@@ -160,6 +163,8 @@ export const useProducts = (userId?: string) => {
             image_url: productData.image_url || null,
             allow_half_half: productData.allow_half_half || false,
             half_half_price_rule: productData.half_half_price_rule || 'highest',
+            has_stock_control: productData.hasStockControl || false,
+            stock_quantity: productData.stockQuantity || 0,
             user_id: userId
           })
           .select()
@@ -200,7 +205,9 @@ export const useProducts = (userId?: string) => {
           isActive: data.is_active,
           image_url: data.image_url || "",
           allow_half_half: data.allow_half_half || false,
-          half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest'
+          half_half_price_rule: data.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
+          hasStockControl: data.has_stock_control || false,
+          stockQuantity: data.stock_quantity || 0
         };
         
         setIsProductFormOpen(false);
