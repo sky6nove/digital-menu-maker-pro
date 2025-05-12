@@ -63,7 +63,7 @@ const Menu = () => {
         name: cat.name,
         isActive: cat.is_active,
         order: cat.order || 0,
-        categoryType: (cat.category_type as 'regular' | 'pizza') || 'regular',
+        categoryType: (cat.category_type === 'pizza' ? 'pizza' : 'regular') as 'regular' | 'pizza',
         allowHalfHalf: cat.allow_half_half || false,
         halfHalfPriceRule: (cat.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest',
         hasPortions: cat.has_portions || false,

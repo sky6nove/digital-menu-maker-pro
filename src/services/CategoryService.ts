@@ -26,8 +26,8 @@ export const CategoryService = {
           // Now these fields exist in the database
           allowHalfHalf: cat.allow_half_half || false,
           halfHalfPriceRule: (cat.half_half_price_rule as 'lowest' | 'highest' | 'average') || 'highest',
-          // Add new fields
-          categoryType: cat.category_type || 'regular',
+          // Cast categoryType to the proper union type
+          categoryType: (cat.category_type === 'pizza' ? 'pizza' : 'regular') as 'regular' | 'pizza',
           hasPortions: cat.has_portions === true,
           portionsLabel: cat.portions_label || 'Serve'
         };
@@ -58,7 +58,7 @@ export const CategoryService = {
           order: categoryData.order,
           allow_half_half: categoryData.allowHalfHalf,
           half_half_price_rule: categoryData.halfHalfPriceRule,
-          category_type: categoryData.categoryType || 'regular',
+          category_type: categoryData.categoryType,
           has_portions: categoryData.hasPortions,
           portions_label: categoryData.portionsLabel || null,
           updated_at: new Date().toISOString()
@@ -95,7 +95,7 @@ export const CategoryService = {
           order: maxOrder,
           allow_half_half: categoryData.allowHalfHalf,
           half_half_price_rule: categoryData.halfHalfPriceRule,
-          category_type: categoryData.categoryType || 'regular',
+          category_type: categoryData.categoryType,
           has_portions: categoryData.hasPortions,
           portions_label: categoryData.portionsLabel || null,
           user_id: userId
