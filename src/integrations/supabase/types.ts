@@ -190,7 +190,6 @@ export type Database = {
           id: number
           is_required: boolean | null
           product_id: number
-          user_id: string | null
         }
         Insert: {
           complement_group_id: number
@@ -198,7 +197,6 @@ export type Database = {
           id?: number
           is_required?: boolean | null
           product_id: number
-          user_id?: string | null
         }
         Update: {
           complement_group_id?: number
@@ -206,7 +204,6 @@ export type Database = {
           id?: number
           is_required?: boolean | null
           product_id?: number
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -295,61 +292,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "product_sizes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      product_specific_complements: {
-        Row: {
-          complement_group_id: number
-          complement_id: number
-          created_at: string | null
-          custom_price: number | null
-          id: number
-          is_active: boolean | null
-          product_id: number
-          user_id: string | null
-        }
-        Insert: {
-          complement_group_id: number
-          complement_id: number
-          created_at?: string | null
-          custom_price?: number | null
-          id?: number
-          is_active?: boolean | null
-          product_id: number
-          user_id?: string | null
-        }
-        Update: {
-          complement_group_id?: number
-          complement_id?: number
-          created_at?: string | null
-          custom_price?: number | null
-          id?: number
-          is_active?: boolean | null
-          product_id?: number
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_specific_complements_complement_group_id_fkey"
-            columns: ["complement_group_id"]
-            isOneToOne: false
-            referencedRelation: "complement_groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_specific_complements_complement_id_fkey"
-            columns: ["complement_id"]
-            isOneToOne: false
-            referencedRelation: "complements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_specific_complements_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -580,27 +522,6 @@ export type Database = {
           product_id: number | null
           updated_at: string | null
         }[]
-      }
-      get_product_specific_complements: {
-        Args: { product_id_param: number; group_id_param: number }
-        Returns: {
-          id: number
-          product_id: number
-          complement_group_id: number
-          complement_id: number
-          is_active: boolean
-          custom_price: number
-          complement_name: string
-          complement_default_price: number
-        }[]
-      }
-      initialize_product_specific_complements: {
-        Args: {
-          product_id_param: number
-          group_id_param: number
-          user_id_param: string
-        }
-        Returns: undefined
       }
       insert_product_complement: {
         Args: {

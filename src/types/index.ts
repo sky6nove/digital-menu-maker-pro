@@ -149,14 +149,3 @@ export interface ProductComplementGroup {
   complementGroupId: number;
   isRequired: boolean;
 }
-
-export interface ProductSpecificComplement {
-  id: number;
-  productId: number;
-  complementGroupId: number; 
-  complementId: number;
-  isActive: boolean;
-  customPrice: number | null;
-  complementName: string;
-  complementDefaultPrice: number;
-}
