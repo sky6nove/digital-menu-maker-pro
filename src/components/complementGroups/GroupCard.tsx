@@ -3,7 +3,8 @@ import { useState } from "react";
 import { ComplementGroup } from "@/types";
 import { Card, CardHeader, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Image, Edit, Trash } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Image, Edit, Trash, Settings } from "lucide-react";
 
 interface GroupCardProps {
   group: ComplementGroup;
@@ -18,7 +19,10 @@ const GroupCard = ({ group, onEdit, onDelete, onViewComplements }: GroupCardProp
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle>{group.name}</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>{group.name}</CardTitle>
+              {!group.isActive && <Badge variant="outline">Inativo</Badge>}
+            </div>
             <CardDescription>
               Tipo: {group.groupType === 'ingredients' ? 'Ingredientes' : 
                     group.groupType === 'specifications' ? 'Especificações' :
@@ -27,19 +31,19 @@ const GroupCard = ({ group, onEdit, onDelete, onViewComplements }: GroupCardProp
             {(group.minimumQuantity > 0 || group.maximumQuantity > 0 || group.isRequired) && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {group.isRequired && (
-                  <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800 border-red-200">
+                  <Badge variant="default" className="bg-red-600">
                     Obrigatório
-                  </span>
+                  </Badge>
                 )}
                 {group.minimumQuantity > 0 && (
-                  <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 border-blue-200">
+                  <Badge variant="secondary">
                     Min: {group.minimumQuantity}
-                  </span>
+                  </Badge>
                 )}
                 {group.maximumQuantity > 0 && (
-                  <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800 border-green-200">
+                  <Badge variant="secondary">
                     Max: {group.maximumQuantity}
-                  </span>
+                  </Badge>
                 )}
               </div>
             )}
@@ -67,7 +71,8 @@ const GroupCard = ({ group, onEdit, onDelete, onViewComplements }: GroupCardProp
             size="sm"
             onClick={() => onViewComplements(group.id)}
           >
-            Ver Complementos
+            <Settings className="h-4 w-4 mr-1" />
+            Complementos
           </Button>
           <div className="flex gap-2">
             <Button 

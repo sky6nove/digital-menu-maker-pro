@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import FileUploader from "./FileUploader";
 
 interface ComplementGroupFormProps {
@@ -79,6 +81,11 @@ const ComplementGroupForm = ({ group, onSubmit, onCancel }: ComplementGroupFormP
     <Card className="w-full">
       <CardHeader>
         <CardTitle>{isEditing ? "Editar Grupo" : "Adicionar Grupo"}</CardTitle>
+        {isEditing && (
+          <CardDescription>
+            Alterações neste grupo afetarão todos os produtos que usam este grupo de complementos
+          </CardDescription>
+        )}
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
@@ -163,7 +170,23 @@ const ComplementGroupForm = ({ group, onSubmit, onCancel }: ComplementGroupFormP
               checked={formData.isRequired}
               onCheckedChange={handleRequiredChange}
             />
-            <Label htmlFor="isRequired">Obrigatório escolher</Label>
+            <Label htmlFor="isRequired" className="flex items-center">
+              Obrigatório escolher
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertCircle className="h-4 w-4 ml-1 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>
+                      Quando um grupo é marcado como obrigatório, isso será usado como configuração padrão
+                      ao adicionar este grupo a produtos. Você ainda pode alterar essa configuração 
+                      individualmente para cada produto.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </Label>
             <span className="text-xs text-muted-foreground ml-2">(Cliente deve escolher os complementos deste grupo)</span>
           </div>
         </CardContent>

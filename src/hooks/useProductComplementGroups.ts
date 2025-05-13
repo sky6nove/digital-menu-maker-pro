@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,7 @@ export const useProductComplementGroups = (productId?: number) => {
     try {
       setLoading(true);
       
-      // Load all available complement groups
+      // Load all available complement groups with complete information
       const { data: groupsData, error: groupsError } = await supabase
         .from("complement_groups")
         .select("*")
@@ -42,18 +41,27 @@ export const useProductComplementGroups = (productId?: number) => {
       if (productId) {
         const { data: productGroupsData, error: productGroupsError } = await supabase
           .from("product_complement_groups")
-          .select("*")
+          .select(`
+            *,
+            complement_groups:complement_group_id(*)
+          `)
           .eq("product_id", productId);
           
         if (productGroupsError) throw productGroupsError;
         
         if (productGroupsData) {
-          const formattedProductGroups: ProductComplementGroup[] = productGroupsData.map(pg => ({
-            id: pg.id,
-            productId: pg.product_id,
-            complementGroupId: pg.complement_group_id,
-            isRequired: pg.is_required || false
-          }));
+          const formattedProductGroups: ProductComplementGroup[] = productGroupsData.map(pg => {
+            const groupDetails = pg.complement_groups as any;
+            
+            return {
+              id: pg.id,
+              productId: pg.product_id,
+              complementGroupId: pg.complement_group_id,
+              // If is_required is explicitly set in the product_complement_groups record, use that
+              // Otherwise, default to the group's isRequired property
+              isRequired: pg.is_required !== null ? pg.is_required : (groupDetails?.is_required || false)
+            };
+          });
           
           setSelectedGroups(formattedProductGroups);
         }
@@ -73,12 +81,18 @@ export const useProductComplementGroups = (productId?: number) => {
     }
     
     try {
+      // Get the default isRequired value from the group
+      const selectedGroup = availableGroups.find(g => g.id === groupId);
+      
+      // Use the provided isRequired value or default to the group's setting
+      const finalIsRequired = isRequired !== undefined ? isRequired : (selectedGroup?.isRequired || false);
+      
       const { data, error } = await supabase
         .from("product_complement_groups")
         .insert({
           product_id: productId,
           complement_group_id: groupId,
-          is_required: isRequired
+          is_required: finalIsRequired
         })
         .select()
         .single();
