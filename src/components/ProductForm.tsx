@@ -53,6 +53,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
   const {
     availableGroups,
     selectedGroups,
+    productId,
     addGroupToProduct,
     removeGroupFromProduct,
     updateGroupRequiredStatus
@@ -656,6 +657,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
               <ProductComplementGroups
                 availableGroups={availableGroups}
                 selectedGroups={selectedGroups}
+                productId={isEditing ? product.id : undefined}
                 onAddGroup={addGroupToProduct}
                 onRemoveGroup={removeGroupFromProduct}
                 onUpdateRequired={updateGroupRequiredStatus}

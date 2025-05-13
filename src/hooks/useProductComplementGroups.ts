@@ -78,7 +78,8 @@ export const useProductComplementGroups = (productId?: number) => {
         .insert({
           product_id: productId,
           complement_group_id: groupId,
-          is_required: isRequired
+          is_required: isRequired,
+          user_id: user?.id
         })
         .select()
         .single();
@@ -169,6 +170,7 @@ export const useProductComplementGroups = (productId?: number) => {
     loading,
     availableGroups,
     selectedGroups,
+    productId,
     loadComplementGroups,
     addGroupToProduct,
     removeGroupFromProduct,
