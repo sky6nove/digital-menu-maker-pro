@@ -38,6 +38,8 @@ export interface CartItem {
   leftFlavor?: Product;
   rightFlavor?: Product;
   complements?: CartItemComplement[];
+  complementGroups?: ProductComplementGroup[];
+  selectedComplements?: {[groupId: number]: ComplementItem[]};
 }
 
 export interface CartItemComplement {
@@ -45,6 +47,8 @@ export interface CartItemComplement {
   name: string;
   price: number;
   quantity: number;
+  groupId?: number;
+  groupName?: string;
 }
 
 export interface ProductSize {
@@ -141,6 +145,8 @@ export interface ComplementItem {
   isActive: boolean;
   productId?: number;
   product?: Product;
+  quantity?: number;
+  customPrice?: number;
 }
 
 export interface ProductComplementGroup {

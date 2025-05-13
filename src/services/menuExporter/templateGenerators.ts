@@ -25,7 +25,7 @@ export const generateProductsHTML = (products: Product[]): string => {
               : ""
           }
           <div class="action-buttons">
-              <button onclick="addToCart('${product.name}', ${product.price})">Adicionar</button>
+              <button onclick="openProductModal(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${(product.description || "").replace(/'/g, "\\'")}', '${product.image_url || ""}')">Adicionar</button>
           </div>
       </div>
     `;
@@ -111,5 +111,27 @@ export const generateCartHTML = (formattedWhatsApp: string): string => {
           </div>
       </div>
   </div>
+  
+  <!-- Product Modal -->
+  <div id="product-modal" class="product-modal">
+      <div class="product-modal-content">
+          <div class="product-modal-header">
+              <h3 id="modal-product-name"></h3>
+              <span id="modal-product-price"></span>
+              <button class="close-modal" onclick="closeProductModal()">&times;</button>
+          </div>
+          <div class="product-modal-body">
+              <p id="modal-product-description"></p>
+              <div id="modal-product-image-container" class="product-image-container">
+                  <img id="modal-product-image" alt="Product Image" />
+              </div>
+              <div id="modal-product-complements"></div>
+          </div>
+          <div class="product-modal-footer">
+              <button id="modal-add-to-cart" onclick="addToCartFromModal()">Adicionar ao Carrinho</button>
+          </div>
+      </div>
+  </div>
   `;
 };
+

@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
-import { Product, Category, CartItem } from "@/types";
+import { Product, Category, CartItem, ComplementItem, CartItemComplement } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, X, ShoppingCart, MapPin, Phone } from "lucide-react";
+import { Plus, X, ShoppingCart, MapPin, Phone, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ProductDialog from "@/components/ProductDialog";
 
 interface MenuPreviewProps {
   products: Product[];
@@ -26,6 +28,8 @@ const MenuPreview = ({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<number, boolean>>({});
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
 
   // Filter active items
   const activeCategories = categories.filter((cat) => cat.isActive);
@@ -38,17 +42,63 @@ const MenuPreview = ({
     });
   };
 
-  const addToCart = (product: Product) => {
-    const existingItem = cart.find((item) => item.id === product.id);
+  const openProductDialog = (product: Product) => {
+    setSelectedProduct(product);
+    setIsProductDialogOpen(true);
+  };
 
-    if (existingItem) {
-      setCart(
-        cart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        )
-      );
+  const closeProductDialog = () => {
+    setIsProductDialogOpen(false);
+    setSelectedProduct(null);
+  };
+
+  const addToCart = (product: Product, selectedComplements?: {[groupId: number]: ComplementItem[]}) => {
+    // Create cart item complements from selected complements
+    const complements: CartItemComplement[] = [];
+    
+    if (selectedComplements) {
+      Object.entries(selectedComplements).forEach(([groupId, items]) => {
+        items.forEach(item => {
+          const quantity = item.quantity || 1;
+          
+          complements.push({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: quantity,
+            groupId: parseInt(groupId),
+            groupName: item.groupName
+          });
+        });
+      });
+    }
+    
+    // Calculate total price including complements
+    let totalPrice = product.price;
+    complements.forEach(item => {
+      totalPrice += item.price * item.quantity;
+    });
+
+    const cartItem: CartItem = {
+      id: product.id,
+      name: product.name,
+      price: totalPrice,
+      quantity: 1,
+      complements: complements.length > 0 ? complements : undefined,
+      selectedComplements: selectedComplements
+    };
+
+    // Check if item with same complements exists
+    const existingItemIndex = findMatchingCartItemIndex(cartItem);
+    
+    if (existingItemIndex !== -1) {
+      // Update quantity of existing item
+      const updatedCart = [...cart];
+      updatedCart[existingItemIndex].quantity += 1;
+      setCart(updatedCart);
     } else {
-      setCart([...cart, { id: product.id, name: product.name, price: product.price, quantity: 1 }]);
+      // Add new item
+      setCart([...cart, cartItem]);
     }
 
     toast({
@@ -62,17 +112,42 @@ const MenuPreview = ({
     }
   };
 
-  const removeFromCart = (id: number) => {
-    const item = cart.find((item) => item.id === id);
-    
-    if (item && item.quantity > 1) {
-      setCart(
-        cart.map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity - 1 } : item
-        )
-      );
+  // Helper to find a matching cart item with same complements
+  const findMatchingCartItemIndex = (cartItem: CartItem): number => {
+    return cart.findIndex(item => {
+      if (item.id !== cartItem.id) return false;
+      
+      // If one has complements and the other doesn't, they don't match
+      if (Boolean(item.complements) !== Boolean(cartItem.complements)) return false;
+      
+      // If neither has complements, they match
+      if (!item.complements && !cartItem.complements) return true;
+      
+      // Compare complements
+      const itemComplements = item.complements || [];
+      const newItemComplements = cartItem.complements || [];
+      
+      if (itemComplements.length !== newItemComplements.length) return false;
+      
+      // Check if all complements match
+      return newItemComplements.every(newComp => {
+        const matchingComp = itemComplements.find(
+          comp => comp.id === newComp.id && comp.groupId === newComp.groupId
+        );
+        
+        return matchingComp && matchingComp.quantity === newComp.quantity;
+      });
+    });
+  };
+
+  const removeFromCart = (index: number) => {
+    const updatedCart = [...cart];
+    if (updatedCart[index].quantity > 1) {
+      updatedCart[index].quantity -= 1;
+      setCart(updatedCart);
     } else {
-      setCart(cart.filter((item) => item.id !== id));
+      updatedCart.splice(index, 1);
+      setCart(updatedCart);
     }
   };
 
@@ -104,8 +179,40 @@ const MenuPreview = ({
 
     let message = "Olá! Gostaria de fazer o seguinte pedido:\n\n";
     
-    cart.forEach(item => {
+    cart.forEach((item, index) => {
       message += `${item.quantity}x ${item.name} - R$${formatPrice(item.price * item.quantity)}\n`;
+      
+      // Add complements details
+      if (item.complements && item.complements.length > 0) {
+        message += "   Complementos:\n";
+        
+        // Group complements by group
+        const groupedComplements: {[groupId: number]: CartItemComplement[]} = {};
+        
+        item.complements.forEach(comp => {
+          const groupId = comp.groupId || 0;
+          if (!groupedComplements[groupId]) {
+            groupedComplements[groupId] = [];
+          }
+          groupedComplements[groupId].push(comp);
+        });
+        
+        // Add each group's complements
+        Object.entries(groupedComplements).forEach(([groupId, comps]) => {
+          const groupName = comps[0].groupName || "Complementos";
+          message += `   - ${groupName}:\n`;
+          
+          comps.forEach(comp => {
+            message += `     ${comp.quantity}x ${comp.name}`;
+            if (comp.price > 0) {
+              message += ` (+R$${formatPrice(comp.price * comp.quantity)})`;
+            }
+            message += "\n";
+          });
+        });
+      }
+      
+      message += "\n";
     });
     
     message += `\nTotal: R$${formatPrice(getTotalPrice())}\n\nNome para o pedido:\nEndereço de entrega:\n`;
@@ -187,7 +294,7 @@ const MenuPreview = ({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            addToCart(product);
+                            openProductDialog(product);
                           }}
                         >
                           <Plus className="h-4 w-4 mr-1" /> Adicionar
@@ -249,33 +356,53 @@ const MenuPreview = ({
           {cart.length > 0 ? (
             <>
               <div className="space-y-3 mb-4">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-700">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{item.quantity}x</span>
-                      <span>{item.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span>R$ {formatPrice(item.price * item.quantity)}</span>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 w-7 p-0 border-menu-accent text-menu-accent"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 w-7 p-0 border-menu-accent text-menu-accent"
-                          onClick={() => addToCart(activeProducts.find(p => p.id === item.id)!)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
+                {cart.map((item, index) => (
+                  <div key={`${item.id}-${index}`} className="py-2 border-b border-gray-700">
+                    <div className="flex justify-between items-center mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{item.quantity}x</span>
+                        <span>{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span>R$ {formatPrice(item.price * item.quantity)}</span>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 w-7 p-0 border-menu-accent text-menu-accent"
+                            onClick={() => removeFromCart(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 w-7 p-0 border-menu-accent text-menu-accent"
+                            onClick={() => {
+                              const updatedCart = [...cart];
+                              updatedCart[index].quantity += 1;
+                              setCart(updatedCart);
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+                    
+                    {/* Show complements */}
+                    {item.complements && item.complements.length > 0 && (
+                      <div className="ml-6 mt-1 text-sm text-gray-400">
+                        {item.complements.map((comp, compIndex) => (
+                          <div key={`${comp.id}-${compIndex}`} className="flex justify-between">
+                            <span>{comp.quantity}x {comp.name}</span>
+                            {comp.price > 0 && (
+                              <span>+R$ {formatPrice(comp.price * comp.quantity)}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -301,6 +428,14 @@ const MenuPreview = ({
           )}
         </div>
       </div>
+
+      {/* Product dialog */}
+      <ProductDialog
+        product={selectedProduct}
+        isOpen={isProductDialogOpen}
+        onClose={closeProductDialog}
+        onAddToCart={addToCart}
+      />
     </div>
   );
 };

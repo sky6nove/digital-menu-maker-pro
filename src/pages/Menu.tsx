@@ -45,14 +45,22 @@ const Menu = () => {
       const { data: categoriesData, error: categoriesError } = await supabase
         .from("categories")
         .select("*")
-        .eq("user_id", user?.id);
+        .eq("user_id", user?.id)
+        .order('order', { ascending: true });
       
       if (categoriesError) throw categoriesError;
       
-      // Load products
+      // Load products with all needed data
       const { data: productsData, error: productsError } = await supabase
         .from("products")
-        .select("*")
+        .select(`
+          *,
+          product_complement_groups (
+            id, 
+            complement_group_id, 
+            is_required
+          )
+        `)
         .eq("user_id", user?.id);
       
       if (productsError) throw productsError;
@@ -70,9 +78,6 @@ const Menu = () => {
         portionsLabel: cat.portions_label || 'Serve'
       }));
       
-      // Sort categories by order
-      formattedCategories.sort((a, b) => a.order - b.order);
-      
       const formattedProducts: Product[] = productsData.map(prod => ({
         id: prod.id,
         name: prod.name,
@@ -87,7 +92,9 @@ const Menu = () => {
         productTypeId: prod.product_type_id,
         dietaryRestrictions: prod.dietary_restrictions,
         portionSize: prod.portion_size,
-        servesCount: prod.serves_count
+        servesCount: prod.serves_count,
+        hasStockControl: prod.has_stock_control || false,
+        stockQuantity: prod.stock_quantity
       }));
       
       setCategories(formattedCategories);
