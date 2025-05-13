@@ -64,7 +64,8 @@ export const useProductMenuComplements = (productId?: number) => {
               groupId: group.id,
               name: c.name,
               price: c.price,
-              isActive: c.is_active
+              isActive: c.is_active,
+              groupName: group.name // Add the group name here
             }));
             
             return { group, complements, isRequired };
@@ -80,7 +81,8 @@ export const useProductMenuComplements = (productId?: number) => {
                 name: c.complement_name,
                 price: c.custom_price || c.complement_default_price,
                 isActive: c.is_active,
-                customPrice: c.custom_price
+                customPrice: c.custom_price,
+                groupName: group.name // Add the group name here
               }));
             
             return { group, complements, isRequired };
@@ -98,7 +100,8 @@ export const useProductMenuComplements = (productId?: number) => {
               groupId: group.id,
               name: c.name,
               price: c.price,
-              isActive: c.is_active
+              isActive: c.is_active,
+              groupName: group.name // Add the group name here
             }));
             
             return { group, complements, isRequired };

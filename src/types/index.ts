@@ -1,3 +1,4 @@
+
 export interface Product {
   id: number;
   name: string;
@@ -147,6 +148,7 @@ export interface ComplementItem {
   product?: Product;
   quantity?: number;
   customPrice?: number;
+  groupName?: string;
 }
 
 export interface ProductComplementGroup {
