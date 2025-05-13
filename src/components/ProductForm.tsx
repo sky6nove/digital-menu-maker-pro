@@ -14,6 +14,8 @@ import FileUploader from "./FileUploader";
 import { Plus, Trash, DollarSign, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProductComplementGroups } from "@/hooks/useProductComplementGroups";
+import ProductComplementGroups from "./ProductComplementGroups";
 
 interface ProductFormProps {
   product?: Product;
@@ -46,6 +48,15 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
   const [selectedComplements, setSelectedComplements] = useState<number[]>([]);
 
   const isEditing = !!product;
+  
+  // Use the product complement groups hook
+  const {
+    availableGroups,
+    selectedGroups,
+    addGroupToProduct,
+    removeGroupFromProduct,
+    updateGroupRequiredStatus
+  } = useProductComplementGroups(isEditing ? product.id : undefined);
 
   useEffect(() => {
     if (isEditing) {
@@ -376,6 +387,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
               <TabsTrigger value="pizzaOptions">Opções de Pizza</TabsTrigger>
             )}
             <TabsTrigger value="complements">Complementos</TabsTrigger>
+            <TabsTrigger value="complementGroups">Grupos de Complemento</TabsTrigger>
           </TabsList>
           
           <CardContent className="space-y-4 pt-4">
@@ -638,6 +650,16 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
                   </div>
                 </div>
               )}
+            </TabsContent>
+            
+            <TabsContent value="complementGroups" className="space-y-4">
+              <ProductComplementGroups
+                availableGroups={availableGroups}
+                selectedGroups={selectedGroups}
+                onAddGroup={addGroupToProduct}
+                onRemoveGroup={removeGroupFromProduct}
+                onUpdateRequired={updateGroupRequiredStatus}
+              />
             </TabsContent>
           </CardContent>
         </Tabs>
