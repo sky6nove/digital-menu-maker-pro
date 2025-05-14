@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,25 +11,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import MenuService from "@/services/MenuService";
-import ProductForm from "@/components/ProductForm";
 import CategoryForm from "@/components/CategoryForm";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   // Use our custom hooks for products and categories
   const {
     products,
-    currentProduct,
-    isProductFormOpen,
-    setIsProductFormOpen,
     loadProducts,
-    handleAddProduct,
-    handleEditProduct,
     handleDeleteProduct,
-    handleSubmitProduct,
-    setCurrentProduct
   } = useProducts(user?.id);
 
   const {
@@ -67,6 +61,14 @@ const Dashboard = () => {
   // Menu export handlers are now in MenuService
   const handleExportMenu = () => MenuService.exportMenu(products, categories);
   const handlePreviewMenu = () => MenuService.previewMenu();
+
+  const handleAddProduct = () => {
+    navigate('/product/new');
+  };
+
+  const handleEditProduct = (productId) => {
+    navigate(`/product/${productId}`);
+  };
 
   if (loading) {
     return (
@@ -183,7 +185,7 @@ const Dashboard = () => {
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
-                                  onClick={() => handleEditProduct(product)}
+                                  onClick={() => handleEditProduct(product.id)}
                                 >
                                   Editar
                                 </Button>
@@ -209,18 +211,9 @@ const Dashboard = () => {
                           size="sm"
                           className="text-primary"
                           onClick={() => {
-                            setCurrentProduct({
-                              id: 0,
-                              name: '',
-                              description: '',
-                              price: 0,
-                              categoryId: category.id,
-                              isActive: true,
-                              image_url: '',
-                              allow_half_half: false,
-                              half_half_price_rule: 'highest'
+                            navigate('/product/new', { 
+                              state: { defaultCategoryId: category.id } 
                             });
-                            setIsProductFormOpen(true);
                           }}
                         >
                           <Plus className="h-3 w-3 mr-1" />
@@ -265,7 +258,7 @@ const Dashboard = () => {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => handleEditProduct(product)}
+                            onClick={() => handleEditProduct(product.id)}
                           >
                             Editar
                           </Button>
@@ -294,22 +287,7 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {/* Product Form Dialog */}
-        <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogTitle>
-              {currentProduct?.id ? 'Editar Produto' : 'Adicionar Produto'}
-            </DialogTitle>
-            <ProductForm
-              product={currentProduct}
-              categories={categories}
-              onSubmit={handleSubmitProduct}
-              onCancel={() => setIsProductFormOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-        
-        {/* Category Form Dialog */}
+        {/* Category Form Dialog (kept as dialog) */}
         <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogTitle>

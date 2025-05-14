@@ -16,6 +16,7 @@ import Settings from "@/pages/Settings";
 import Subscription from "@/pages/Subscription";
 import Categories from "@/pages/Categories";
 import ComplementGroups from "@/pages/ComplementGroups";
+import ProductEdit from "@/pages/ProductEdit";
 
 import "@/App.css";
 
@@ -67,6 +68,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ComplementGroups />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/product/:productId"
+              element={
+                <ProtectedRoute>
+                  <ProductEdit />
                 </ProtectedRoute>
               }
             />

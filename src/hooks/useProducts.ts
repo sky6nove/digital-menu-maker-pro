@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Product, ProductSize } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +8,6 @@ export const useProducts = (userId?: string) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | undefined>(undefined);
-  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
 
   const loadProducts = async () => {
     if (!userId) return;
@@ -44,16 +44,6 @@ export const useProducts = (userId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAddProduct = () => {
-    setCurrentProduct(undefined);
-    setIsProductFormOpen(true);
-  };
-
-  const handleEditProduct = (product: Product) => {
-    setCurrentProduct(product);
-    setIsProductFormOpen(true);
   };
 
   const handleDeleteProduct = async (id: number) => {
@@ -129,8 +119,6 @@ export const useProducts = (userId?: string) => {
           if (insertSizesError) throw insertSizesError;
         }
         
-        toast.success("Produto atualizado com sucesso");
-        
         // Map database format to our interface
         const updatedProduct: Product = {
           id: data.id,
@@ -193,8 +181,6 @@ export const useProducts = (userId?: string) => {
           if (insertSizesError) throw insertSizesError;
         }
         
-        toast.success("Produto adicionado com sucesso");
-        
         // Map database format to our interface
         const newProduct: Product = {
           id: data.id,
@@ -210,7 +196,6 @@ export const useProducts = (userId?: string) => {
           stockQuantity: data.stock_quantity || 0
         };
         
-        setIsProductFormOpen(false);
         loadProducts();
         return newProduct;
       }
@@ -225,11 +210,7 @@ export const useProducts = (userId?: string) => {
     products,
     loading,
     currentProduct,
-    isProductFormOpen,
-    setIsProductFormOpen,
     loadProducts,
-    handleAddProduct,
-    handleEditProduct,
     handleDeleteProduct,
     handleSubmitProduct,
     setCurrentProduct
