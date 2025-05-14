@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ComplementGroup, ProductComplementGroup } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -67,7 +68,11 @@ export const useProductComplementGroups = (productId?: number) => {
         }
       }
     } catch (error: any) {
-      toast.error("Erro ao carregar grupos de complementos");
+      toast({
+        title: "Erro ao carregar grupos de complementos",
+        description: error.message,
+        variant: "destructive",
+      });
       console.error("Error loading complement groups:", error);
     } finally {
       setLoading(false);
@@ -76,7 +81,11 @@ export const useProductComplementGroups = (productId?: number) => {
 
   const addGroupToProduct = async (groupId: number, isRequired: boolean) => {
     if (!productId || !user?.id) {
-      toast.error("Produto não especificado");
+      toast({
+        title: "Produto não especificado",
+        description: "ID do produto não fornecido",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -107,16 +116,27 @@ export const useProductComplementGroups = (productId?: number) => {
       };
       
       setSelectedGroups([...selectedGroups, newGroup]);
-      toast.success("Grupo adicionado ao produto");
+      toast({
+        title: "Grupo adicionado ao produto",
+        variant: "default",
+      });
     } catch (error: any) {
-      toast.error("Erro ao adicionar grupo ao produto");
+      toast({
+        title: "Erro ao adicionar grupo ao produto",
+        description: error.message,
+        variant: "destructive",
+      });
       console.error("Error adding group to product:", error);
     }
   };
 
   const removeGroupFromProduct = async (groupId: number) => {
     if (!productId) {
-      toast.error("Produto não especificado");
+      toast({
+        title: "Produto não especificado",
+        description: "ID do produto não fornecido",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -124,7 +144,10 @@ export const useProductComplementGroups = (productId?: number) => {
       const groupToRemove = selectedGroups.find(g => g.complementGroupId === groupId);
       
       if (!groupToRemove) {
-        toast.error("Grupo não encontrado");
+        toast({
+          title: "Grupo não encontrado",
+          variant: "destructive",
+        });
         return;
       }
       
@@ -136,16 +159,27 @@ export const useProductComplementGroups = (productId?: number) => {
       if (error) throw error;
       
       setSelectedGroups(selectedGroups.filter(g => g.complementGroupId !== groupId));
-      toast.success("Grupo removido do produto");
+      toast({
+        title: "Grupo removido do produto",
+        variant: "default",
+      });
     } catch (error: any) {
-      toast.error("Erro ao remover grupo do produto");
+      toast({
+        title: "Erro ao remover grupo do produto",
+        description: error.message,
+        variant: "destructive",
+      });
       console.error("Error removing group from product:", error);
     }
   };
 
   const updateGroupRequiredStatus = async (groupId: number, isRequired: boolean) => {
     if (!productId) {
-      toast.error("Produto não especificado");
+      toast({
+        title: "Produto não especificado",
+        description: "ID do produto não fornecido",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -153,7 +187,10 @@ export const useProductComplementGroups = (productId?: number) => {
       const groupToUpdate = selectedGroups.find(g => g.complementGroupId === groupId);
       
       if (!groupToUpdate) {
-        toast.error("Grupo não encontrado");
+        toast({
+          title: "Grupo não encontrado",
+          variant: "destructive",
+        });
         return;
       }
       
@@ -167,8 +204,18 @@ export const useProductComplementGroups = (productId?: number) => {
       setSelectedGroups(selectedGroups.map(g => 
         g.complementGroupId === groupId ? { ...g, isRequired } : g
       ));
+      
+      toast({
+        title: "Status atualizado",
+        description: `Grupo ${isRequired ? "obrigatório" : "opcional"}`,
+        variant: "default",
+      });
     } catch (error: any) {
-      toast.error("Erro ao atualizar grupo");
+      toast({
+        title: "Erro ao atualizar grupo",
+        description: error.message,
+        variant: "destructive",
+      });
       console.error("Error updating group:", error);
     }
   };
