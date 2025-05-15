@@ -11,6 +11,7 @@ interface GroupsListProps {
   onUpdateMinMax: (groupId: number, min: number, max: number) => void;
   onToggleGroupActive: (groupId: number, isActive: boolean) => void;
   onToggleComplementActive: (complementId: number, isActive: boolean) => void;
+  onUpdatePrice: (complementId: number, price: number) => void;
 }
 
 export const GroupsList = ({ 
@@ -20,7 +21,8 @@ export const GroupsList = ({
   onUpdateRequired,
   onUpdateMinMax,
   onToggleGroupActive,
-  onToggleComplementActive
+  onToggleComplementActive,
+  onUpdatePrice
 }: GroupsListProps) => {
   return (
     <div className="space-y-3">
@@ -41,6 +43,7 @@ export const GroupsList = ({
             onUpdateMinMax={onUpdateMinMax}
             onToggleGroupActive={onToggleGroupActive}
             onToggleComplementActive={onToggleComplementActive}
+            onUpdatePrice={onUpdatePrice}
           />
         );
       })}

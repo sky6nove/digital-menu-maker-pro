@@ -14,6 +14,7 @@ interface ProductComplementGroupsProps {
   onUpdateMinMax: (groupId: number, min: number, max: number) => void;
   onToggleGroupActive: (groupId: number, isActive: boolean) => void;
   onToggleComplementActive: (complementId: number, isActive: boolean) => void;
+  onUpdatePrice: (complementId: number, price: number) => void;
 }
 
 const ProductComplementGroups = ({
@@ -24,7 +25,8 @@ const ProductComplementGroups = ({
   onUpdateRequired,
   onUpdateMinMax,
   onToggleGroupActive,
-  onToggleComplementActive
+  onToggleComplementActive,
+  onUpdatePrice
 }: ProductComplementGroupsProps) => {
   return (
     <div className="space-y-4">
@@ -52,6 +54,7 @@ const ProductComplementGroups = ({
           onUpdateMinMax={onUpdateMinMax}
           onToggleGroupActive={onToggleGroupActive}
           onToggleComplementActive={onToggleComplementActive}
+          onUpdatePrice={onUpdatePrice}
         />
       ) : (
         <EmptyGroupsState />

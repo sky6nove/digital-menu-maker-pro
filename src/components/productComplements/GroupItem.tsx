@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { ComplementGroup, ProductComplementGroup, ComplementItem } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Trash, Info, ChevronDown, ChevronUp, Edit, Save } from "lucide-react";
+import { Trash, Info, ChevronDown, ChevronUp, Edit, Save, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +20,7 @@ interface GroupItemProps {
   onUpdateMinMax: (groupId: number, min: number, max: number) => void;
   onToggleGroupActive: (groupId: number, isActive: boolean) => void;
   onToggleComplementActive: (complementId: number, isActive: boolean) => void;
+  onUpdatePrice: (complementId: number, price: number) => void;
 }
 
 export const GroupItem = ({
@@ -30,7 +30,8 @@ export const GroupItem = ({
   onUpdateRequired,
   onUpdateMinMax,
   onToggleGroupActive,
-  onToggleComplementActive
+  onToggleComplementActive,
+  onUpdatePrice
 }: GroupItemProps) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -301,6 +302,7 @@ export const GroupItem = ({
           complementItems={complementItems} 
           isLoading={loading}
           onToggleActive={handleToggleComplementActive}
+          onUpdatePrice={onUpdatePrice}
         />
       </CollapsibleContent>
     </Collapsible>
@@ -311,9 +313,44 @@ interface ComplementsTableProps {
   complementItems: ComplementItem[];
   isLoading: boolean;
   onToggleActive: (complementId: number, currentActive: boolean) => void;
+  onUpdatePrice: (complementId: number, price: number) => void;
 }
 
-const ComplementsTable = ({ complementItems, isLoading, onToggleActive }: ComplementsTableProps) => {
+const ComplementsTable = ({ complementItems, isLoading, onToggleActive, onUpdatePrice }: ComplementsTableProps) => {
+  const [editingPriceId, setEditingPriceId] = useState<number | null>(null);
+  const [priceValue, setPriceValue] = useState<string>('');
+
+  const handleEditPrice = (complementId: number, currentPrice: number) => {
+    setEditingPriceId(complementId);
+    setPriceValue(currentPrice.toString());
+  };
+
+  const handleSavePrice = (complementId: number) => {
+    const newPrice = parseFloat(priceValue);
+    if (isNaN(newPrice) || newPrice < 0) {
+      return; // Invalid price
+    }
+    
+    onUpdatePrice(complementId, newPrice);
+    setEditingPriceId(null);
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Allow only valid price format
+    const value = e.target.value;
+    if (/^\d*\.?\d{0,2}$/.test(value)) {
+      setPriceValue(value);
+    }
+  };
+
+  const handlePriceKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, complementId: number) => {
+    if (e.key === 'Enter') {
+      handleSavePrice(complementId);
+    } else if (e.key === 'Escape') {
+      setEditingPriceId(null);
+    }
+  };
+
   return (
     <div className="border-t">
       {isLoading ? (
@@ -335,7 +372,42 @@ const ComplementsTable = ({ complementItems, isLoading, onToggleActive }: Comple
             {complementItems.map(item => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
-                <TableCell>R$ {item.price.toFixed(2).replace('.', ',')}</TableCell>
+                <TableCell>
+                  {editingPriceId === item.id ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="relative w-24">
+                        <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <Input
+                          value={priceValue}
+                          onChange={handlePriceChange}
+                          onKeyDown={(e) => handlePriceKeyDown(e, item.id)}
+                          className="pl-8 py-1 h-8"
+                          autoFocus
+                        />
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleSavePrice(item.id)}
+                      >
+                        <Save className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-1">
+                      <span>R$ {item.price.toFixed(2).replace('.', ',')}</span>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-6 w-6 p-0 ml-2"
+                        onClick={() => handleEditPrice(item.id, item.price)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Badge variant={item.isActive ? "default" : "secondary"}>
                     {item.isActive ? "Ativo" : "Inativo"}

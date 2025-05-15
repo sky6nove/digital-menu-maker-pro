@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Product, Category, ProductSize, Complement, ProductComplement } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,8 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
     updateGroupRequiredStatus,
     updateGroupMinMax,
     toggleGroupActive,
-    toggleComplementActive
+    toggleComplementActive,
+    updateComplementPrice
   } = useProductComplementGroups(isEditing ? product.id : undefined);
 
   useEffect(() => {
@@ -666,6 +666,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
                 onUpdateMinMax={updateGroupMinMax}
                 onToggleGroupActive={toggleGroupActive}
                 onToggleComplementActive={toggleComplementActive}
+                onUpdatePrice={updateComplementPrice}
               />
             </TabsContent>
           </CardContent>
