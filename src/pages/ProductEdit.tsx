@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +14,11 @@ const ProductEdit = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { productId } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
+  
+  // Get the defaultCategoryId from location state if available
+  const defaultCategoryId = location.state?.defaultCategoryId;
   
   // Use our custom hooks for products and categories
   const {
@@ -37,7 +41,7 @@ const ProductEdit = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!loading && products.length > 0 && productId) {
+    if (!loading && products.length > 0 && productId && productId !== "new") {
       const product = products.find(p => p.id === parseInt(productId));
       if (product) {
         setCurrentProduct(product);
@@ -48,12 +52,16 @@ const ProductEdit = () => {
       }
     } else if (!loading && productId === "new") {
       // Creating a new product
+      const initialCategoryId = defaultCategoryId 
+        ? defaultCategoryId 
+        : (categories.length > 0 ? categories[0].id : 0);
+
       setCurrentProduct({
         id: 0,
         name: '',
         description: '',
         price: 0,
-        categoryId: categories.length > 0 ? categories[0].id : 0,
+        categoryId: initialCategoryId,
         isActive: true,
         image_url: '',
         allow_half_half: false,
@@ -62,7 +70,7 @@ const ProductEdit = () => {
         stockQuantity: 0
       });
     }
-  }, [loading, products, productId]);
+  }, [loading, products, productId, categories, defaultCategoryId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -112,6 +120,7 @@ const ProductEdit = () => {
             </h1>
             <p className="text-muted-foreground">
               {currentProduct?.id ? 'Edite as informações do produto' : 'Adicione um novo produto ao cardápio'}
+              {defaultCategoryId && ' na categoria selecionada'}
             </p>
           </div>
           
