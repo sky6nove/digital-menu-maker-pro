@@ -1,83 +1,25 @@
 
-import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ComplementGroup, ProductComplementGroup } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 
-export const useProductComplementGroups = (productId?: number) => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [availableGroups, setAvailableGroups] = useState<ComplementGroup[]>([]);
-  const [selectedGroups, setSelectedGroups] = useState<ProductComplementGroup[]>([]);
+export interface UseGroupActionsProps {
+  productId?: number;
+  selectedGroups: ProductComplementGroup[];
+  availableGroups: ComplementGroup[];
+  setSelectedGroups: (groups: ProductComplementGroup[]) => void;
+  setAvailableGroups: (groups: ComplementGroup[]) => void;
+}
 
-  const loadComplementGroups = async () => {
-    try {
-      setLoading(true);
-      
-      // Load all available complement groups with complete information
-      const { data: groupsData, error: groupsError } = await supabase
-        .from("complement_groups")
-        .select("*")
-        .eq("user_id", user?.id)
-        .eq("is_active", true);
-        
-      if (groupsError) throw groupsError;
-      
-      // Transform to match our interface
-      const formattedGroups: ComplementGroup[] = groupsData.map(group => ({
-        id: group.id,
-        name: group.name,
-        groupType: group.group_type as 'ingredients' | 'specifications' | 'cross_sell' | 'disposables',
-        isActive: group.is_active,
-        imageUrl: group.image_url || undefined,
-        minimumQuantity: group.minimum_quantity || 0,
-        maximumQuantity: group.maximum_quantity || 0,
-        isRequired: group.is_required || false
-      }));
-      
-      setAvailableGroups(formattedGroups);
-      
-      // If we have a product ID, load the selected groups for this product
-      if (productId) {
-        const { data: productGroupsData, error: productGroupsError } = await supabase
-          .from("product_complement_groups")
-          .select(`
-            *,
-            complement_groups:complement_group_id(*)
-          `)
-          .eq("product_id", productId);
-          
-        if (productGroupsError) throw productGroupsError;
-        
-        if (productGroupsData) {
-          const formattedProductGroups: ProductComplementGroup[] = productGroupsData.map(pg => {
-            const groupDetails = pg.complement_groups as any;
-            
-            return {
-              id: pg.id,
-              productId: pg.product_id,
-              complementGroupId: pg.complement_group_id,
-              // If is_required is explicitly set in the product_complement_groups record, use that
-              // Otherwise, default to the group's isRequired property
-              isRequired: pg.is_required !== null ? pg.is_required : (groupDetails?.is_required || false)
-            };
-          });
-          
-          setSelectedGroups(formattedProductGroups);
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar grupos de complementos",
-        description: error.message,
-        variant: "destructive",
-      });
-      console.error("Error loading complement groups:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+export const useGroupActions = ({
+  productId,
+  selectedGroups,
+  availableGroups,
+  setSelectedGroups,
+  setAvailableGroups
+}: UseGroupActionsProps) => {
+  const { user } = useAuth();
 
   const addGroupToProduct = async (groupId: number, isRequired: boolean) => {
     if (!productId || !user?.id) {
@@ -349,17 +291,7 @@ export const useProductComplementGroups = (productId?: number) => {
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      loadComplementGroups();
-    }
-  }, [user, productId]);
-
   return {
-    loading,
-    availableGroups,
-    selectedGroups,
-    loadComplementGroups,
     addGroupToProduct,
     removeGroupFromProduct,
     updateGroupRequiredStatus,
