@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ComplementGroup, ProductComplementGroup } from "@/types";
@@ -185,18 +184,16 @@ export const useGroupActions = ({
         
       if (error) throw error;
       
-      // Update the local state
-      setAvailableGroups(groups => 
-        groups.map(group => 
-          group.id === groupId 
-            ? { 
-                ...group, 
-                minimumQuantity: minQuantity,
-                maximumQuantity: maxQuantity
-              } 
-            : group
-        )
-      );
+      // Update the local state - fix the type issue by creating a new array
+      setAvailableGroups(availableGroups.map(group => 
+        group.id === groupId 
+          ? { 
+              ...group, 
+              minimumQuantity: minQuantity,
+              maximumQuantity: maxQuantity
+            } 
+          : group
+      ));
       
       toast({
         title: "Quantidades atualizadas",
@@ -233,14 +230,12 @@ export const useGroupActions = ({
         
       if (error) throw error;
       
-      // Update the local state
-      setAvailableGroups(groups => 
-        groups.map(group => 
-          group.id === groupId 
-            ? { ...group, isActive } 
-            : group
-        )
-      );
+      // Update the local state - fix the type issue by creating a new array
+      setAvailableGroups(availableGroups.map(group => 
+        group.id === groupId 
+          ? { ...group, isActive } 
+          : group
+      ));
       
       toast({
         title: "Status do grupo atualizado",

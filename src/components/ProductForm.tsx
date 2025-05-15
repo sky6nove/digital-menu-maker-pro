@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Product, Category, ProductSize, Complement, ProductComplement } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import FileUploader from "./FileUploader";
 import { Plus, Trash, DollarSign, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProductComplementGroups } from "@/hooks/useProductComplementGroups";
+import { useProductComplementGroups } from "@/hooks/productComplements/useProductComplementGroups";
 import ProductComplementGroups from "./ProductComplementGroups";
 
 interface ProductFormProps {
