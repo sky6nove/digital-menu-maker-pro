@@ -11,6 +11,9 @@ interface ProductComplementGroupsProps {
   onAddGroup: (groupId: number, isRequired: boolean) => void;
   onRemoveGroup: (groupId: number) => void;
   onUpdateRequired: (groupId: number, isRequired: boolean) => void;
+  onUpdateMinMax: (groupId: number, min: number, max: number) => void;
+  onToggleGroupActive: (groupId: number, isActive: boolean) => void;
+  onToggleComplementActive: (complementId: number, isActive: boolean) => void;
 }
 
 const ProductComplementGroups = ({
@@ -18,7 +21,10 @@ const ProductComplementGroups = ({
   selectedGroups,
   onAddGroup,
   onRemoveGroup,
-  onUpdateRequired
+  onUpdateRequired,
+  onUpdateMinMax,
+  onToggleGroupActive,
+  onToggleComplementActive
 }: ProductComplementGroupsProps) => {
   return (
     <div className="space-y-4">
@@ -43,6 +49,9 @@ const ProductComplementGroups = ({
           availableGroups={availableGroups} 
           onRemoveGroup={onRemoveGroup}
           onUpdateRequired={onUpdateRequired}
+          onUpdateMinMax={onUpdateMinMax}
+          onToggleGroupActive={onToggleGroupActive}
+          onToggleComplementActive={onToggleComplementActive}
         />
       ) : (
         <EmptyGroupsState />

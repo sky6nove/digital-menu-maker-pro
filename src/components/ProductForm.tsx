@@ -55,7 +55,10 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
     selectedGroups,
     addGroupToProduct,
     removeGroupFromProduct,
-    updateGroupRequiredStatus
+    updateGroupRequiredStatus,
+    updateGroupMinMax,
+    toggleGroupActive,
+    toggleComplementActive
   } = useProductComplementGroups(isEditing ? product.id : undefined);
 
   useEffect(() => {
@@ -659,6 +662,9 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
                 onAddGroup={addGroupToProduct}
                 onRemoveGroup={removeGroupFromProduct}
                 onUpdateRequired={updateGroupRequiredStatus}
+                onUpdateMinMax={updateGroupMinMax}
+                onToggleGroupActive={toggleGroupActive}
+                onToggleComplementActive={toggleComplementActive}
               />
             </TabsContent>
           </CardContent>

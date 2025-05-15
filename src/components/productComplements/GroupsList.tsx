@@ -8,13 +8,19 @@ interface GroupsListProps {
   availableGroups: ComplementGroup[];
   onRemoveGroup: (groupId: number) => void;
   onUpdateRequired: (groupId: number, isRequired: boolean) => void;
+  onUpdateMinMax: (groupId: number, min: number, max: number) => void;
+  onToggleGroupActive: (groupId: number, isActive: boolean) => void;
+  onToggleComplementActive: (complementId: number, isActive: boolean) => void;
 }
 
 export const GroupsList = ({ 
   selectedGroups, 
   availableGroups, 
   onRemoveGroup, 
-  onUpdateRequired 
+  onUpdateRequired,
+  onUpdateMinMax,
+  onToggleGroupActive,
+  onToggleComplementActive
 }: GroupsListProps) => {
   return (
     <div className="space-y-3">
@@ -32,6 +38,9 @@ export const GroupsList = ({
             groupDetails={groupDetails}
             onRemoveGroup={onRemoveGroup}
             onUpdateRequired={onUpdateRequired}
+            onUpdateMinMax={onUpdateMinMax}
+            onToggleGroupActive={onToggleGroupActive}
+            onToggleComplementActive={onToggleComplementActive}
           />
         );
       })}

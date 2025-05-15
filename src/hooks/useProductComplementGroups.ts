@@ -220,6 +220,135 @@ export const useProductComplementGroups = (productId?: number) => {
     }
   };
 
+  const updateGroupMinMax = async (groupId: number, minQuantity: number, maxQuantity: number) => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Update the group in the database
+      const { error } = await supabase
+        .from("complement_groups")
+        .update({ 
+          minimum_quantity: minQuantity,
+          maximum_quantity: maxQuantity
+        })
+        .eq("id", groupId)
+        .eq("user_id", user.id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setAvailableGroups(groups => 
+        groups.map(group => 
+          group.id === groupId 
+            ? { 
+                ...group, 
+                minimumQuantity: minQuantity,
+                maximumQuantity: maxQuantity
+              } 
+            : group
+        )
+      );
+      
+      toast({
+        title: "Quantidades atualizadas",
+        description: `Min: ${minQuantity}, Max: ${maxQuantity}`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar quantidades",
+        description: error.message,
+        variant: "destructive",
+      });
+      console.error("Error updating min/max quantities:", error);
+    }
+  };
+
+  const toggleGroupActive = async (groupId: number, isActive: boolean) => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Update the group in the database
+      const { error } = await supabase
+        .from("complement_groups")
+        .update({ is_active: isActive })
+        .eq("id", groupId)
+        .eq("user_id", user.id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      setAvailableGroups(groups => 
+        groups.map(group => 
+          group.id === groupId 
+            ? { ...group, isActive } 
+            : group
+        )
+      );
+      
+      toast({
+        title: "Status do grupo atualizado",
+        description: `Grupo ${isActive ? "ativado" : "desativado"}`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar status do grupo",
+        description: error.message,
+        variant: "destructive",
+      });
+      console.error("Error toggling group active state:", error);
+    }
+  };
+
+  const toggleComplementActive = async (complementId: number, isActive: boolean) => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Update the complement in the database
+      const { error } = await supabase
+        .from("complement_items")
+        .update({ is_active: isActive })
+        .eq("id", complementId);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Status do complemento atualizado",
+        description: `Complemento ${isActive ? "ativado" : "desativado"}`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar status do complemento",
+        description: error.message,
+        variant: "destructive",
+      });
+      console.error("Error toggling complement active state:", error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadComplementGroups();
@@ -233,6 +362,9 @@ export const useProductComplementGroups = (productId?: number) => {
     loadComplementGroups,
     addGroupToProduct,
     removeGroupFromProduct,
-    updateGroupRequiredStatus
+    updateGroupRequiredStatus,
+    updateGroupMinMax,
+    toggleGroupActive,
+    toggleComplementActive
   };
 };
