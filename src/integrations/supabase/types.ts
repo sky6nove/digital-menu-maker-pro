@@ -391,6 +391,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           dietary_restrictions: string[] | null
+          display_order: number | null
           half_half_price_rule: string | null
           has_stock_control: boolean | null
           id: number
@@ -412,6 +413,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           dietary_restrictions?: string[] | null
+          display_order?: number | null
           half_half_price_rule?: string | null
           has_stock_control?: boolean | null
           id?: number
@@ -433,6 +435,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           dietary_restrictions?: string[] | null
+          display_order?: number | null
           half_half_price_rule?: string | null
           has_stock_control?: boolean | null
           id?: number
