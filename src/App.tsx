@@ -17,6 +17,7 @@ import Subscription from "@/pages/Subscription";
 import Categories from "@/pages/Categories";
 import ComplementGroups from "@/pages/ComplementGroups";
 import ProductEdit from "@/pages/ProductEdit";
+import ProductOrder from "@/pages/ProductOrder";
 
 import "@/App.css";
 
@@ -76,6 +77,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProductEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/product-order"
+              element={
+                <ProtectedRoute>
+                  <ProductOrder />
                 </ProtectedRoute>
               }
             />
