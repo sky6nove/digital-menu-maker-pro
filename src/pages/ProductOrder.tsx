@@ -82,14 +82,10 @@ const ProductOrder = () => {
       if (error) throw error;
       
       // Ensure all products have a display_order
-      const productsWithOrder = (data || []).map((product, index) => {
-        return {
-          id: product.id,
-          name: product.name,
-          category_id: product.category_id,
-          display_order: product.display_order || index + 1
-        } as ProductWithOrder;
-      });
+      const productsWithOrder = (data || []).map((product, index) => ({
+        ...product,
+        display_order: product.display_order || index + 1
+      }));
       
       setProducts(productsWithOrder);
     } catch (error) {
