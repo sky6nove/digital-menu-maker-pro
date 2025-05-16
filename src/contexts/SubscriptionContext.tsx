@@ -33,13 +33,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('check-subscription');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error checking subscription:', error);
+        // Don't show error toast on initial load as it might be due to authentication state
+        return;
+      }
       
-      setIsSubscribed(data.subscribed);
-      setSubscription(data.subscription);
+      setIsSubscribed(data?.subscribed || false);
+      setSubscription(data?.subscription || null);
     } catch (error: any) {
       console.error('Error checking subscription:', error);
-      toast.error('Erro ao verificar assinatura');
+      // Only show error toast if it's not during initial load
+      if (!isLoading) {
+        toast.error('Erro ao verificar assinatura');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -51,9 +58,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         body: { planType }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating checkout session:', error);
+        toast.error('Erro ao criar sessão de pagamento');
+        return null;
+      }
       
-      return data.url;
+      return data?.url || null;
     } catch (error: any) {
       console.error('Error creating checkout session:', error);
       toast.error('Erro ao criar sessão de pagamento');
