@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -8,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import { useComplementGroups } from "@/hooks/useComplementGroups";
+import { useProductComplementGroups } from "@/hooks/useProductComplementGroups";
+import { useGroupComplements } from "@/hooks/useGroupComplements";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,13 +28,16 @@ const ReorderMenu = () => {
   const { products, loadProducts } = useProducts(user?.id);
   const { categories, loadCategories } = useCategories(user?.id);
   const { complementGroups, loadComplementGroups } = useComplementGroups();
-  const [complements, setComplements] = useState<Array<{id: number, name: string, groupId: number, groupName: string}>>([]);
+  const { fetchComplementGroupsByProduct } = useProductComplementGroups();
+  const { fetchComplementsByGroup } = useGroupComplements();
   
   // State to track which section is active (categories, products, groups, complements)
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
+  const [activeProduct, setActiveProduct] = useState<number | null>(null);
   const [activeGroup, setActiveGroup] = useState<number | null>(null);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [filteredComplements, setFilteredComplements] = useState<any[]>([]);
+  const [productGroups, setProductGroups] = useState<any[]>([]);
+  const [groupComplements, setGroupComplements] = useState<any[]>([]);
 
   // Load all data
   useEffect(() => {
@@ -44,8 +48,7 @@ const ReorderMenu = () => {
           await Promise.all([
             loadCategories(),
             loadProducts(),
-            loadComplementGroups(),
-            fetchComplements()
+            loadComplementGroups()
           ]);
         } catch (error) {
           toast.error("Erro ao carregar dados");
@@ -63,62 +66,44 @@ const ReorderMenu = () => {
   useEffect(() => {
     if (activeCategory) {
       setFilteredProducts(products.filter(p => p.categoryId === activeCategory));
+      setActiveProduct(null); // Reset product selection
+      setActiveGroup(null); // Reset group selection
+      setProductGroups([]); // Clear product groups
+      setGroupComplements([]); // Clear group complements
     } else {
       setFilteredProducts([]);
     }
   }, [activeCategory, products]);
 
-  // Update filtered complements when activeGroup changes
+  // Load product complement groups when a product is selected
   useEffect(() => {
-    if (activeGroup) {
-      setFilteredComplements(complements.filter(c => c.groupId === activeGroup));
-    } else {
-      setFilteredComplements([]);
-    }
-  }, [activeGroup, complements]);
+    const loadProductGroups = async () => {
+      if (activeProduct) {
+        const groups = await fetchComplementGroupsByProduct(activeProduct);
+        setProductGroups(groups);
+      } else {
+        setProductGroups([]);
+      }
+      setActiveGroup(null); // Reset group selection
+      setGroupComplements([]); // Clear group complements
+    };
 
-  // Fetch complements
-  const fetchComplements = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("complements")
-        .select("id, name, price, is_active");
-        
-      if (error) throw error;
-      
-      // Group complements by their group
-      const { data: groupData, error: groupError } = await supabase
-        .from("product_complement_groups")
-        .select(`
-          complement_group_id,
-          complement_groups:complement_group_id(name)
-        `)
-        .order('id');
-        
-      if (groupError) throw groupError;
-      
-      // Create a map of complement group IDs to names
-      const groupNameMap = new Map();
-      groupData.forEach(item => {
-        if (item.complement_groups && !groupNameMap.has(item.complement_group_id)) {
-          groupNameMap.set(item.complement_group_id, item.complement_groups.name);
-        }
-      });
-      
-      // Transform complement data to include group name
-      const complementsWithGroup = data.map(comp => ({
-        id: comp.id,
-        name: comp.name,
-        groupId: 0, // Default
-        groupName: 'Sem grupo'
-      }));
-      
-      setComplements(complementsWithGroup);
-    } catch (error) {
-      console.error("Error fetching complements:", error);
-      toast.error("Erro ao carregar complementos");
-    }
-  };
+    loadProductGroups();
+  }, [activeProduct]);
+
+  // Load complements when a group is selected
+  useEffect(() => {
+    const loadGroupComplements = async () => {
+      if (activeGroup) {
+        const complements = await fetchComplementsByGroup(activeGroup);
+        setGroupComplements(complements);
+      } else {
+        setGroupComplements([]);
+      }
+    };
+
+    loadGroupComplements();
+  }, [activeGroup]);
 
   // Handle reordering for products
   const handleProductMove = async (id: number, direction: 'up' | 'down') => {
@@ -194,10 +179,29 @@ const ReorderMenu = () => {
     }
   };
 
+  // Handle reordering for complement groups
+  const handleGroupMove = async (id: number, direction: 'up' | 'down') => {
+    // This would implement reordering of complement groups
+    toast.info("Reordenação de grupos de complementos será implementada em breve");
+  };
+
+  // Handle reordering for complements
+  const handleComplementMove = async (id: number, direction: 'up' | 'down') => {
+    // This would implement reordering of complements
+    toast.info("Reordenação de complementos será implementada em breve");
+  };
+
   // Handle selecting a category to show its products
   const handleCategorySelect = (categoryId: number) => {
     setActiveCategory(activeCategory === categoryId ? null : categoryId);
+    setActiveProduct(null); // Reset product selection when changing category
     setActiveGroup(null); // Reset group selection when changing category
+  };
+
+  // Handle selecting a product to show its complement groups
+  const handleProductSelect = (productId: number) => {
+    setActiveProduct(activeProduct === productId ? null : productId);
+    setActiveGroup(null); // Reset group selection when changing product
   };
 
   // Handle selecting a group to show its complements
@@ -233,8 +237,12 @@ const ReorderMenu = () => {
     ? categories.find(c => c.id === activeCategory)?.name 
     : '';
 
+  const activeProductName = activeProduct
+    ? products.find(p => p.id === activeProduct)?.name
+    : '';
+
   const activeGroupName = activeGroup 
-    ? complementGroups.find(g => g.id === activeGroup)?.name 
+    ? productGroups.find(g => g.id === activeGroup)?.name 
     : '';
 
   return (
@@ -272,7 +280,9 @@ const ReorderMenu = () => {
                 <ProductPanel 
                   products={filteredProducts}
                   activeCategory={activeCategory}
+                  activeProduct={activeProduct}
                   categoryName={activeCategoryName}
+                  handleProductSelect={handleProductSelect}
                   handleProductMove={handleProductMove}
                 />
               </ResizablePanel>
@@ -282,9 +292,12 @@ const ReorderMenu = () => {
               {/* Complement Groups */}
               <ResizablePanel defaultSize={25}>
                 <ComplementGroupPanel 
-                  complementGroups={complementGroups}
+                  complementGroups={productGroups}
+                  activeProduct={activeProduct}
                   activeGroup={activeGroup}
+                  productName={activeProductName}
                   handleGroupSelect={handleGroupSelect}
+                  handleGroupMove={handleGroupMove}
                 />
               </ResizablePanel>
               
@@ -293,9 +306,10 @@ const ReorderMenu = () => {
               {/* Complements */}
               <ResizablePanel defaultSize={25}>
                 <ComplementPanel 
-                  complements={filteredComplements}
+                  complements={groupComplements}
                   activeGroup={activeGroup}
                   groupName={activeGroupName}
+                  handleComplementMove={handleComplementMove}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>

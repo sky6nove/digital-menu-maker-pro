@@ -7,19 +7,21 @@ interface Complement {
   id: number;
   name: string;
   groupId: number;
-  groupName: string;
+  groupName?: string;
 }
 
 interface ComplementPanelProps {
   complements: Complement[];
   activeGroup: number | null;
   groupName?: string;
+  handleComplementMove: (id: number, direction: 'up' | 'down') => void;
 }
 
 const ComplementPanel: React.FC<ComplementPanelProps> = ({
   complements,
   activeGroup,
-  groupName
+  groupName,
+  handleComplementMove
 }) => {
   return (
     <ReorderPanel 
@@ -29,8 +31,8 @@ const ComplementPanel: React.FC<ComplementPanelProps> = ({
       {activeGroup && (
         <ItemList
           items={complements}
-          onMoveUp={(id) => {/* To be implemented */}}
-          onMoveDown={(id) => {/* To be implemented */}}
+          onMoveUp={(id) => handleComplementMove(id, 'up')}
+          onMoveDown={(id) => handleComplementMove(id, 'down')}
         />
       )}
     </ReorderPanel>

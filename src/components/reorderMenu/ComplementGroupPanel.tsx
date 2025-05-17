@@ -5,28 +5,36 @@ import ItemList from "./ItemList";
 import { ComplementGroup } from "@/types";
 
 interface ComplementGroupPanelProps {
-  complementGroups: ComplementGroup[];
+  complementGroups: any[];
+  activeProduct: number | null;
   activeGroup: number | null;
+  productName?: string;
   handleGroupSelect: (id: number) => void;
+  handleGroupMove: (id: number, direction: 'up' | 'down') => void;
 }
 
 const ComplementGroupPanel: React.FC<ComplementGroupPanelProps> = ({
   complementGroups,
+  activeProduct,
   activeGroup,
-  handleGroupSelect
+  productName,
+  handleGroupSelect,
+  handleGroupMove
 }) => {
   return (
     <ReorderPanel 
-      title="Grupos de complementos" 
-      selectedId={activeGroup}
+      title={`Grupos de complementos${productName ? ` - ${productName}` : ''}`}
+      emptyMessage="Selecione um item para visualizar seus grupos de complementos"
     >
-      <ItemList
-        items={complementGroups}
-        onMoveUp={(id) => {/* To be implemented */}}
-        onMoveDown={(id) => {/* To be implemented */}}
-        onClick={handleGroupSelect}
-        selectedId={activeGroup}
-      />
+      {activeProduct && (
+        <ItemList
+          items={complementGroups}
+          onMoveUp={(id) => handleGroupMove(id, 'up')}
+          onMoveDown={(id) => handleGroupMove(id, 'down')}
+          onClick={handleGroupSelect}
+          selectedId={activeGroup}
+        />
+      )}
     </ReorderPanel>
   );
 };

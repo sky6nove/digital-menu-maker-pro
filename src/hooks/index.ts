@@ -6,5 +6,7 @@ export * from "./use-toast";
 export * from "./useCategories";
 export * from "./useComplementGroups";
 export * from "./useDataHelpers";
+export * from "./useGroupComplements";
+export * from "./useProductComplementGroups";
 export * from "./useProductMenuComplements";
 export * from "./useProducts";

@@ -7,14 +7,18 @@ import { Product } from "@/types";
 interface ProductPanelProps {
   products: Product[];
   activeCategory: number | null;
+  activeProduct: number | null;
   categoryName?: string;
+  handleProductSelect: (id: number) => void;
   handleProductMove: (id: number, direction: 'up' | 'down') => void;
 }
 
 const ProductPanel: React.FC<ProductPanelProps> = ({
   products,
   activeCategory,
+  activeProduct,
   categoryName,
+  handleProductSelect,
   handleProductMove
 }) => {
   return (
@@ -27,6 +31,8 @@ const ProductPanel: React.FC<ProductPanelProps> = ({
           items={products}
           onMoveUp={(id) => handleProductMove(id, 'up')}
           onMoveDown={(id) => handleProductMove(id, 'down')}
+          onClick={handleProductSelect}
+          selectedId={activeProduct}
         />
       )}
     </ReorderPanel>
