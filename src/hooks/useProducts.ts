@@ -34,7 +34,8 @@ export const useProducts = (userId?: string) => {
         allow_half_half: prod.allow_half_half || false,
         half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
         hasStockControl: prod.has_stock_control || false,
-        stockQuantity: prod.stock_quantity || 0
+        stockQuantity: prod.stock_quantity || 0,
+        display_order: prod.display_order || null
       }));
       
       setProducts(formattedProducts);

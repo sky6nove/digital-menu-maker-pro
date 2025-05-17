@@ -104,17 +104,21 @@ const ReorderMenu = () => {
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       const targetProduct = products[targetIndex];
       
+      // Get the current display_order values, default to their array indices if undefined
+      const currentDisplayOrder = products[currentIndex].display_order ?? currentIndex;
+      const targetDisplayOrder = targetProduct.display_order ?? targetIndex;
+      
       // Swap display_order values
       const { error: updateError } = await supabase
         .from("products")
-        .update({ display_order: targetProduct.display_order })
+        .update({ display_order: targetDisplayOrder })
         .eq("id", id);
         
       if (updateError) throw updateError;
       
       const { error: updateTargetError } = await supabase
         .from("products")
-        .update({ display_order: products[currentIndex].display_order || 0 })
+        .update({ display_order: currentDisplayOrder })
         .eq("id", targetProduct.id);
         
       if (updateTargetError) throw updateTargetError;

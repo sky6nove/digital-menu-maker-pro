@@ -1,4 +1,3 @@
-
 export interface Product {
   id: number;
   name: string;
@@ -16,6 +15,7 @@ export interface Product {
   servesCount?: number;
   hasStockControl?: boolean;
   stockQuantity?: number;
+  display_order?: number;
 }
 
 export interface Category {
