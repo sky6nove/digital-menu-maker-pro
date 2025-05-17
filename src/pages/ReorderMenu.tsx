@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const ReorderMenu = () => {
   const { user } = useAuth();
@@ -22,6 +23,12 @@ const ReorderMenu = () => {
   const { categories, loadCategories } = useCategories(user?.id);
   const { complementGroups, loadComplementGroups } = useComplementGroups();
   const [complements, setComplements] = useState<Array<{id: number, name: string, groupId: number, groupName: string}>>([]);
+  
+  // State to track which section is active (categories, products, groups, complements)
+  const [activeCategory, setActiveCategory] = useState<number | null>(null);
+  const [activeGroup, setActiveGroup] = useState<number | null>(null);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [filteredComplements, setFilteredComplements] = useState<any[]>([]);
 
   // Load all data
   useEffect(() => {
@@ -46,6 +53,24 @@ const ReorderMenu = () => {
       fetchData();
     }
   }, [user]);
+
+  // Update filtered products when activeCategory changes
+  useEffect(() => {
+    if (activeCategory) {
+      setFilteredProducts(products.filter(p => p.categoryId === activeCategory));
+    } else {
+      setFilteredProducts([]);
+    }
+  }, [activeCategory, products]);
+
+  // Update filtered complements when activeGroup changes
+  useEffect(() => {
+    if (activeGroup) {
+      setFilteredComplements(complements.filter(c => c.groupId === activeGroup));
+    } else {
+      setFilteredComplements([]);
+    }
+  }, [activeGroup, complements]);
 
   // Fetch complements
   const fetchComplements = async () => {
@@ -164,6 +189,17 @@ const ReorderMenu = () => {
     }
   };
 
+  // Handle selecting a category to show its products
+  const handleCategorySelect = (categoryId: number) => {
+    setActiveCategory(activeCategory === categoryId ? null : categoryId);
+    setActiveGroup(null); // Reset group selection when changing category
+  };
+
+  // Handle selecting a group to show its complements
+  const handleGroupSelect = (groupId: number) => {
+    setActiveGroup(activeGroup === groupId ? null : groupId);
+  };
+
   // Handle close
   const handleClose = () => {
     navigate('/dashboard');
@@ -202,45 +238,70 @@ const ReorderMenu = () => {
           </CardHeader>
           <CardContent className="p-6">
             <p className="text-muted-foreground mb-6">
-              Para alterar a ordem dos itens ou categorias do seu cardápio, clique nas setas para mover para cima ou para baixo.
+              Para alterar a ordem dos itens ou categorias do seu cardápio, clique na opção desejada, segure e arraste.
             </p>
             
             <ResizablePanelGroup direction="horizontal" className="min-h-[500px] border rounded-lg">
               {/* Categories */}
               <ResizablePanel defaultSize={25}>
                 <div className="p-4 h-full flex flex-col">
-                  <div className="font-semibold border-b pb-2 mb-2">Categorias</div>
+                  <div className="font-semibold border-b pb-2 mb-2 flex justify-between items-center">
+                    <span>Categorias</span>
+                    <Button variant="ghost" size="sm" className="px-2">
+                      <Move className="h-4 w-4 rotate-90" />
+                    </Button>
+                  </div>
                   <div className="overflow-y-auto flex-1">
-                    {categories.map((category) => (
-                      <div key={category.id} className="flex items-center justify-between border-b last:border-0 py-2">
-                        <div className="flex items-center gap-2">
-                          <Move className="h-4 w-4 text-muted-foreground" />
-                          <span className={category.isActive ? "" : "line-through text-muted-foreground"}>
-                            {category.name}
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleCategoryMove(category.id, 'up')}
-                            disabled={categories.indexOf(category) === 0}
+                    <Table>
+                      <TableBody>
+                        {categories.map((category) => (
+                          <TableRow 
+                            key={category.id} 
+                            className={`cursor-pointer ${activeCategory === category.id ? 'bg-muted' : ''}`}
+                            onClick={() => handleCategorySelect(category.id)}
                           >
-                            <span className="sr-only">Move up</span>
-                            <Move className="h-4 w-4 rotate-90" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleCategoryMove(category.id, 'down')}
-                            disabled={categories.indexOf(category) === categories.length - 1}
-                          >
-                            <span className="sr-only">Move down</span>
-                            <Move className="h-4 w-4 -rotate-90" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                            <TableCell className="py-2">
+                              <div className="flex items-center gap-2">
+                                <Move className="h-4 w-4 text-muted-foreground" />
+                                <span className={category.isActive ? "" : "line-through text-muted-foreground"}>
+                                  {category.name}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="p-0 w-16">
+                              <div className="flex gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCategoryMove(category.id, 'up');
+                                  }}
+                                  disabled={categories.indexOf(category) === 0}
+                                  className="h-7 w-7"
+                                >
+                                  <span className="sr-only">Move up</span>
+                                  <Move className="h-3 w-3 rotate-90" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCategoryMove(category.id, 'down');
+                                  }}
+                                  disabled={categories.indexOf(category) === categories.length - 1}
+                                  className="h-7 w-7"
+                                >
+                                  <span className="sr-only">Move down</span>
+                                  <Move className="h-3 w-3 -rotate-90" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               </ResizablePanel>
@@ -250,38 +311,59 @@ const ReorderMenu = () => {
               {/* Products */}
               <ResizablePanel defaultSize={25}>
                 <div className="p-4 h-full flex flex-col">
-                  <div className="font-semibold border-b pb-2 mb-2">Itens</div>
+                  <div className="font-semibold border-b pb-2 mb-2 flex justify-between items-center">
+                    <span>Itens{activeCategory ? ` - ${categories.find(c => c.id === activeCategory)?.name}` : ''}</span>
+                    <Button variant="ghost" size="sm" className="px-2">
+                      <Move className="h-4 w-4 rotate-90" />
+                    </Button>
+                  </div>
                   <div className="overflow-y-auto flex-1">
-                    {products.map((product) => (
-                      <div key={product.id} className="flex items-center justify-between border-b last:border-0 py-2">
-                        <div className="flex items-center gap-2">
-                          <Move className="h-4 w-4 text-muted-foreground" />
-                          <span className={product.isActive ? "" : "line-through text-muted-foreground"}>
-                            {product.name}
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleProductMove(product.id, 'up')}
-                            disabled={products.indexOf(product) === 0}
-                          >
-                            <span className="sr-only">Move up</span>
-                            <Move className="h-4 w-4 rotate-90" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleProductMove(product.id, 'down')}
-                            disabled={products.indexOf(product) === products.length - 1}
-                          >
-                            <span className="sr-only">Move down</span>
-                            <Move className="h-4 w-4 -rotate-90" />
-                          </Button>
-                        </div>
+                    {activeCategory ? (
+                      <Table>
+                        <TableBody>
+                          {filteredProducts.map((product) => (
+                            <TableRow key={product.id}>
+                              <TableCell className="py-2">
+                                <div className="flex items-center gap-2">
+                                  <Move className="h-4 w-4 text-muted-foreground" />
+                                  <span className={product.isActive ? "" : "line-through text-muted-foreground"}>
+                                    {product.name}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-0 w-16">
+                                <div className="flex gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => handleProductMove(product.id, 'up')}
+                                    disabled={filteredProducts.indexOf(product) === 0}
+                                    className="h-7 w-7"
+                                  >
+                                    <span className="sr-only">Move up</span>
+                                    <Move className="h-3 w-3 rotate-90" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => handleProductMove(product.id, 'down')}
+                                    disabled={filteredProducts.indexOf(product) === filteredProducts.length - 1}
+                                    className="h-7 w-7"
+                                  >
+                                    <span className="sr-only">Move down</span>
+                                    <Move className="h-3 w-3 -rotate-90" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        Selecione uma categoria para visualizar seus itens
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </ResizablePanel>
@@ -291,28 +373,61 @@ const ReorderMenu = () => {
               {/* Complement Groups */}
               <ResizablePanel defaultSize={25}>
                 <div className="p-4 h-full flex flex-col">
-                  <div className="font-semibold border-b pb-2 mb-2">Grupos de complementos</div>
+                  <div className="font-semibold border-b pb-2 mb-2 flex justify-between items-center">
+                    <span>Grupos de complementos</span>
+                    <Button variant="ghost" size="sm" className="px-2">
+                      <Move className="h-4 w-4 rotate-90" />
+                    </Button>
+                  </div>
                   <div className="overflow-y-auto flex-1">
-                    {complementGroups.map((group) => (
-                      <div key={group.id} className="flex items-center justify-between border-b last:border-0 py-2">
-                        <div className="flex items-center gap-2">
-                          <Move className="h-4 w-4 text-muted-foreground" />
-                          <span className={group.isActive ? "" : "line-through text-muted-foreground"}>
-                            {group.name}
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon">
-                            <span className="sr-only">Move up</span>
-                            <Move className="h-4 w-4 rotate-90" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <span className="sr-only">Move down</span>
-                            <Move className="h-4 w-4 -rotate-90" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                    <Table>
+                      <TableBody>
+                        {complementGroups.map((group) => (
+                          <TableRow 
+                            key={group.id} 
+                            className={`cursor-pointer ${activeGroup === group.id ? 'bg-muted' : ''}`}
+                            onClick={() => handleGroupSelect(group.id)}
+                          >
+                            <TableCell className="py-2">
+                              <div className="flex items-center gap-2">
+                                <Move className="h-4 w-4 text-muted-foreground" />
+                                <span className={group.isActive ? "" : "line-through text-muted-foreground"}>
+                                  {group.name}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="p-0 w-16">
+                              <div className="flex gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // handleGroupMove(group.id, 'up') - implement this function
+                                  }}
+                                >
+                                  <span className="sr-only">Move up</span>
+                                  <Move className="h-3 w-3 rotate-90" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // handleGroupMove(group.id, 'down') - implement this function
+                                  }}
+                                >
+                                  <span className="sr-only">Move down</span>
+                                  <Move className="h-3 w-3 -rotate-90" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               </ResizablePanel>
@@ -322,26 +437,53 @@ const ReorderMenu = () => {
               {/* Complements */}
               <ResizablePanel defaultSize={25}>
                 <div className="p-4 h-full flex flex-col">
-                  <div className="font-semibold border-b pb-2 mb-2">Complementos</div>
+                  <div className="font-semibold border-b pb-2 mb-2 flex justify-between items-center">
+                    <span>Complementos{activeGroup ? ` - ${complementGroups.find(g => g.id === activeGroup)?.name}` : ''}</span>
+                    <Button variant="ghost" size="sm" className="px-2">
+                      <Move className="h-4 w-4 rotate-90" />
+                    </Button>
+                  </div>
                   <div className="overflow-y-auto flex-1">
-                    {complements.map((complement) => (
-                      <div key={complement.id} className="flex items-center justify-between border-b last:border-0 py-2">
-                        <div className="flex items-center gap-2">
-                          <Move className="h-4 w-4 text-muted-foreground" />
-                          <span>{complement.name}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon">
-                            <span className="sr-only">Move up</span>
-                            <Move className="h-4 w-4 rotate-90" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <span className="sr-only">Move down</span>
-                            <Move className="h-4 w-4 -rotate-90" />
-                          </Button>
-                        </div>
+                    {activeGroup ? (
+                      <Table>
+                        <TableBody>
+                          {filteredComplements.map((complement) => (
+                            <TableRow key={complement.id}>
+                              <TableCell className="py-2">
+                                <div className="flex items-center gap-2">
+                                  <Move className="h-4 w-4 text-muted-foreground" />
+                                  <span>{complement.name}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-0 w-16">
+                                <div className="flex gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-7 w-7"
+                                  >
+                                    <span className="sr-only">Move up</span>
+                                    <Move className="h-3 w-3 rotate-90" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-7 w-7"
+                                  >
+                                    <span className="sr-only">Move down</span>
+                                    <Move className="h-3 w-3 -rotate-90" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        Selecione um grupo para visualizar seus complementos
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </ResizablePanel>
