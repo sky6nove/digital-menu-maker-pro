@@ -16,10 +16,10 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
 
-  // Use useEffect for navigation instead of redirecting during render
+  // Use useEffect for navigation to prevent rendering issues
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
@@ -33,7 +33,6 @@ const Auth = () => {
         toast.error(error.message);
       } else {
         toast.success('Logged in successfully');
-        navigate('/');
       }
     } catch (error: any) {
       toast.error(error.message);
