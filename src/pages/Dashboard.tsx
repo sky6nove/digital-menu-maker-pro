@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Download, Eye, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Download, Eye, ArrowUp, ArrowDown, Move } from "lucide-react";
 import AuthNavbar from "@/components/AuthNavbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProducts } from "@/hooks/useProducts";
@@ -69,6 +69,10 @@ const Dashboard = () => {
   const handleEditProduct = (productId) => {
     navigate(`/product/${productId}`);
   };
+  
+  const handleOpenReorderMenu = () => {
+    navigate('/reorder-menu');
+  };
 
   if (loading) {
     return (
@@ -92,14 +96,18 @@ const Dashboard = () => {
             <p className="text-muted-foreground">Mantenha seu cardápio sempre atualizado</p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button onClick={handleExportMenu} variant="outline">
               <Download className="h-4 w-4 mr-2" />
               Exportar Cardápio
             </Button>
-            <Button onClick={handlePreviewMenu}>
+            <Button onClick={handlePreviewMenu} variant="outline">
               <Eye className="h-4 w-4 mr-2" />
               Visualizar Cardápio
+            </Button>
+            <Button onClick={handleOpenReorderMenu} variant="outline">
+              <Move className="h-4 w-4 mr-2" />
+              Reordenar Cardápio
             </Button>
           </div>
         </div>

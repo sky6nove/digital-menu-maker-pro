@@ -17,6 +17,7 @@ import Subscription from "@/pages/Subscription";
 import Categories from "@/pages/Categories";
 import ComplementGroups from "@/pages/ComplementGroups";
 import ProductEdit from "@/pages/ProductEdit";
+import ReorderMenu from "@/pages/ReorderMenu";
 
 import "@/App.css";
 
@@ -98,6 +99,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Subscription />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reorder-menu"
+              element={
+                <ProtectedRoute>
+                  <ReorderMenu />
                 </ProtectedRoute>
               }
             />
