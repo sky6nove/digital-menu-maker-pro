@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Move, X } from "lucide-react";
+import { X } from "lucide-react";
 import AuthNavbar from "@/components/AuthNavbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProducts } from "@/hooks/useProducts";
@@ -12,7 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import {
+  CategoryPanel,
+  ProductPanel,
+  ComplementGroupPanel,
+  ComplementPanel
+} from "@/components/reorderMenu";
 
 const ReorderMenu = () => {
   const { user } = useAuth();
@@ -224,6 +229,14 @@ const ReorderMenu = () => {
     );
   }
 
+  const activeCategoryName = activeCategory 
+    ? categories.find(c => c.id === activeCategory)?.name 
+    : '';
+
+  const activeGroupName = activeGroup 
+    ? complementGroups.find(g => g.id === activeGroup)?.name 
+    : '';
+
   return (
     <div className="min-h-screen flex flex-col">
       <AuthNavbar />
@@ -244,248 +257,46 @@ const ReorderMenu = () => {
             <ResizablePanelGroup direction="horizontal" className="min-h-[500px] border rounded-lg">
               {/* Categories */}
               <ResizablePanel defaultSize={25}>
-                <div className="p-4 h-full flex flex-col">
-                  <div className="font-semibold border-b pb-2 mb-2 flex justify-between items-center">
-                    <span>Categorias</span>
-                    <Button variant="ghost" size="sm" className="px-2">
-                      <Move className="h-4 w-4 rotate-90" />
-                    </Button>
-                  </div>
-                  <div className="overflow-y-auto flex-1">
-                    <Table>
-                      <TableBody>
-                        {categories.map((category) => (
-                          <TableRow 
-                            key={category.id} 
-                            className={`cursor-pointer ${activeCategory === category.id ? 'bg-muted' : ''}`}
-                            onClick={() => handleCategorySelect(category.id)}
-                          >
-                            <TableCell className="py-2">
-                              <div className="flex items-center gap-2">
-                                <Move className="h-4 w-4 text-muted-foreground" />
-                                <span className={category.isActive ? "" : "line-through text-muted-foreground"}>
-                                  {category.name}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="p-0 w-16">
-                              <div className="flex gap-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCategoryMove(category.id, 'up');
-                                  }}
-                                  disabled={categories.indexOf(category) === 0}
-                                  className="h-7 w-7"
-                                >
-                                  <span className="sr-only">Move up</span>
-                                  <Move className="h-3 w-3 rotate-90" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCategoryMove(category.id, 'down');
-                                  }}
-                                  disabled={categories.indexOf(category) === categories.length - 1}
-                                  className="h-7 w-7"
-                                >
-                                  <span className="sr-only">Move down</span>
-                                  <Move className="h-3 w-3 -rotate-90" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
+                <CategoryPanel 
+                  categories={categories}
+                  activeCategory={activeCategory}
+                  handleCategorySelect={handleCategorySelect}
+                  handleCategoryMove={handleCategoryMove}
+                />
               </ResizablePanel>
               
               <ResizableHandle withHandle />
               
               {/* Products */}
               <ResizablePanel defaultSize={25}>
-                <div className="p-4 h-full flex flex-col">
-                  <div className="font-semibold border-b pb-2 mb-2 flex justify-between items-center">
-                    <span>Itens{activeCategory ? ` - ${categories.find(c => c.id === activeCategory)?.name}` : ''}</span>
-                    <Button variant="ghost" size="sm" className="px-2">
-                      <Move className="h-4 w-4 rotate-90" />
-                    </Button>
-                  </div>
-                  <div className="overflow-y-auto flex-1">
-                    {activeCategory ? (
-                      <Table>
-                        <TableBody>
-                          {filteredProducts.map((product) => (
-                            <TableRow key={product.id}>
-                              <TableCell className="py-2">
-                                <div className="flex items-center gap-2">
-                                  <Move className="h-4 w-4 text-muted-foreground" />
-                                  <span className={product.isActive ? "" : "line-through text-muted-foreground"}>
-                                    {product.name}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="p-0 w-16">
-                                <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => handleProductMove(product.id, 'up')}
-                                    disabled={filteredProducts.indexOf(product) === 0}
-                                    className="h-7 w-7"
-                                  >
-                                    <span className="sr-only">Move up</span>
-                                    <Move className="h-3 w-3 rotate-90" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => handleProductMove(product.id, 'down')}
-                                    disabled={filteredProducts.indexOf(product) === filteredProducts.length - 1}
-                                    className="h-7 w-7"
-                                  >
-                                    <span className="sr-only">Move down</span>
-                                    <Move className="h-3 w-3 -rotate-90" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        Selecione uma categoria para visualizar seus itens
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ProductPanel 
+                  products={filteredProducts}
+                  activeCategory={activeCategory}
+                  categoryName={activeCategoryName}
+                  handleProductMove={handleProductMove}
+                />
               </ResizablePanel>
               
               <ResizableHandle withHandle />
               
               {/* Complement Groups */}
               <ResizablePanel defaultSize={25}>
-                <div className="p-4 h-full flex flex-col">
-                  <div className="font-semibold border-b pb-2 mb-2 flex justify-between items-center">
-                    <span>Grupos de complementos</span>
-                    <Button variant="ghost" size="sm" className="px-2">
-                      <Move className="h-4 w-4 rotate-90" />
-                    </Button>
-                  </div>
-                  <div className="overflow-y-auto flex-1">
-                    <Table>
-                      <TableBody>
-                        {complementGroups.map((group) => (
-                          <TableRow 
-                            key={group.id} 
-                            className={`cursor-pointer ${activeGroup === group.id ? 'bg-muted' : ''}`}
-                            onClick={() => handleGroupSelect(group.id)}
-                          >
-                            <TableCell className="py-2">
-                              <div className="flex items-center gap-2">
-                                <Move className="h-4 w-4 text-muted-foreground" />
-                                <span className={group.isActive ? "" : "line-through text-muted-foreground"}>
-                                  {group.name}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="p-0 w-16">
-                              <div className="flex gap-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // handleGroupMove(group.id, 'up') - implement this function
-                                  }}
-                                >
-                                  <span className="sr-only">Move up</span>
-                                  <Move className="h-3 w-3 rotate-90" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // handleGroupMove(group.id, 'down') - implement this function
-                                  }}
-                                >
-                                  <span className="sr-only">Move down</span>
-                                  <Move className="h-3 w-3 -rotate-90" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
+                <ComplementGroupPanel 
+                  complementGroups={complementGroups}
+                  activeGroup={activeGroup}
+                  handleGroupSelect={handleGroupSelect}
+                />
               </ResizablePanel>
               
               <ResizableHandle withHandle />
               
               {/* Complements */}
               <ResizablePanel defaultSize={25}>
-                <div className="p-4 h-full flex flex-col">
-                  <div className="font-semibold border-b pb-2 mb-2 flex justify-between items-center">
-                    <span>Complementos{activeGroup ? ` - ${complementGroups.find(g => g.id === activeGroup)?.name}` : ''}</span>
-                    <Button variant="ghost" size="sm" className="px-2">
-                      <Move className="h-4 w-4 rotate-90" />
-                    </Button>
-                  </div>
-                  <div className="overflow-y-auto flex-1">
-                    {activeGroup ? (
-                      <Table>
-                        <TableBody>
-                          {filteredComplements.map((complement) => (
-                            <TableRow key={complement.id}>
-                              <TableCell className="py-2">
-                                <div className="flex items-center gap-2">
-                                  <Move className="h-4 w-4 text-muted-foreground" />
-                                  <span>{complement.name}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="p-0 w-16">
-                                <div className="flex gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="h-7 w-7"
-                                  >
-                                    <span className="sr-only">Move up</span>
-                                    <Move className="h-3 w-3 rotate-90" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="h-7 w-7"
-                                  >
-                                    <span className="sr-only">Move down</span>
-                                    <Move className="h-3 w-3 -rotate-90" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        Selecione um grupo para visualizar seus complementos
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ComplementPanel 
+                  complements={filteredComplements}
+                  activeGroup={activeGroup}
+                  groupName={activeGroupName}
+                />
               </ResizablePanel>
             </ResizablePanelGroup>
             
