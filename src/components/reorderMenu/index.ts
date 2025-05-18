@@ -6,3 +6,4 @@ export { default as CategoryPanel } from './CategoryPanel';
 export { default as ProductPanel } from './ProductPanel';
 export { default as ComplementGroupPanel } from './ComplementGroupPanel';
 export { default as ComplementPanel } from './ComplementPanel';
+export { default as ReorderLayout } from './ReorderLayout';
