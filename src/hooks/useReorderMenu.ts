@@ -106,20 +106,21 @@ export const useReorderMenu = () => {
 
   // Handle reordering for products
   const handleProductMove = async (id: number, direction: 'up' | 'down') => {
-    const currentIndex = products.findIndex(p => p.id === id);
+    const currentIndex = filteredProducts.findIndex(p => p.id === id);
     if (
       (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= products.length - 1)
+      (direction === 'down' && currentIndex >= filteredProducts.length - 1)
     ) {
       return; // Already at top/bottom
     }
     
     try {
+      setSaving(true);
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      const targetProduct = products[targetIndex];
+      const targetProduct = filteredProducts[targetIndex];
       
-      // Get the current display_order values, default to their array indices if undefined
-      const currentDisplayOrder = products[currentIndex].display_order ?? currentIndex;
+      // Get the current display_order values
+      const currentDisplayOrder = filteredProducts[currentIndex].display_order ?? currentIndex;
       const targetDisplayOrder = targetProduct.display_order ?? targetIndex;
       
       // Swap display_order values
@@ -138,10 +139,19 @@ export const useReorderMenu = () => {
       if (updateTargetError) throw updateTargetError;
       
       await loadProducts(); // Reload products
+      
+      // Update the local filtered products list
+      const updatedFilteredProducts = [...filteredProducts];
+      [updatedFilteredProducts[currentIndex], updatedFilteredProducts[targetIndex]] = 
+        [updatedFilteredProducts[targetIndex], updatedFilteredProducts[currentIndex]];
+      setFilteredProducts(updatedFilteredProducts);
+      
       toast.success("Ordem atualizada");
     } catch (error) {
       console.error("Error updating product order:", error);
       toast.error("Erro ao atualizar ordem");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -156,32 +166,79 @@ export const useReorderMenu = () => {
     }
     
     try {
+      setSaving(true);
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       const targetCategory = categories[targetIndex];
       
-      // Use the swapCategoriesOrder method from CategoryService
-      await supabase
+      // Swap order values
+      const { error: updateError } = await supabase
         .from("categories")
         .update({ order: targetCategory.order })
         .eq("id", id);
         
-      await supabase
+      if (updateError) throw updateError;
+      
+      const { error: updateTargetError } = await supabase
         .from("categories")
         .update({ order: categories[currentIndex].order })
         .eq("id", targetCategory.id);
+        
+      if (updateTargetError) throw updateTargetError;
       
       await loadCategories(); // Reload categories
       toast.success("Ordem atualizada");
     } catch (error) {
       console.error("Error updating category order:", error);
       toast.error("Erro ao atualizar ordem");
+    } finally {
+      setSaving(false);
     }
   };
 
   // Handle reordering for complement groups
   const handleGroupMove = async (id: number, direction: 'up' | 'down') => {
-    // This would implement reordering of complement groups
-    toast.info("Reordenação de grupos de complementos será implementada em breve");
+    if (!activeProduct) return;
+    
+    const currentIndex = productGroups.findIndex(g => g.id === id);
+    if (
+      (direction === 'up' && currentIndex <= 0) || 
+      (direction === 'down' && currentIndex >= productGroups.length - 1)
+    ) {
+      return; // Already at top/bottom
+    }
+    
+    try {
+      setSaving(true);
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      const targetGroup = productGroups[targetIndex];
+      
+      // Swap the order in product_complement_groups table
+      // We need to use the productGroupId which is the id in the product_complement_groups table
+      const { error: updateError } = await supabase
+        .from("product_complement_groups")
+        .update({ id: targetGroup.productGroupId })
+        .eq("id", productGroups[currentIndex].productGroupId);
+        
+      if (updateError) throw updateError;
+      
+      const { error: updateTargetError } = await supabase
+        .from("product_complement_groups")
+        .update({ id: productGroups[currentIndex].productGroupId })
+        .eq("id", targetGroup.productGroupId);
+        
+      if (updateTargetError) throw updateTargetError;
+      
+      // Reload product groups
+      const updatedGroups = await fetchComplementGroupsByProduct(activeProduct);
+      setProductGroups(updatedGroups);
+      
+      toast.success("Ordem atualizada");
+    } catch (error) {
+      console.error("Error updating group order:", error);
+      toast.error("Erro ao atualizar ordem de grupos");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Handle reordering for complements
@@ -201,20 +258,38 @@ export const useReorderMenu = () => {
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       const targetComplement = groupComplements[targetIndex];
       
-      // Update the product_specific_complements order
-      const { error: updateError } = await supabase
+      // Find the source entry for the current complement
+      const { data: sourceData, error: sourceError } = await supabase
         .from("product_specific_complements")
-        .update({ id: targetComplement.id })
+        .select("id")
         .eq("complement_id", id)
-        .eq("complement_group_id", activeGroup);
+        .eq("complement_group_id", activeGroup)
+        .single();
         
-      if (updateError) throw updateError;
+      if (sourceError) throw sourceError;
+      
+      // Find the target entry for the target complement
+      const { data: targetData, error: targetError } = await supabase
+        .from("product_specific_complements")
+        .select("id")
+        .eq("complement_id", targetComplement.id)
+        .eq("complement_group_id", activeGroup)
+        .single();
+        
+      if (targetError) throw targetError;
+      
+      // Swap the IDs (which affects the order)
+      const { error: updateSourceError } = await supabase
+        .from("product_specific_complements")
+        .update({ id: targetData.id })
+        .eq("id", sourceData.id);
+        
+      if (updateSourceError) throw updateSourceError;
       
       const { error: updateTargetError } = await supabase
         .from("product_specific_complements")
-        .update({ id: groupComplements[currentIndex].id })
-        .eq("complement_id", targetComplement.id)
-        .eq("complement_group_id", activeGroup);
+        .update({ id: sourceData.id })
+        .eq("id", targetData.id);
         
       if (updateTargetError) throw updateTargetError;
       
@@ -225,7 +300,7 @@ export const useReorderMenu = () => {
       toast.success("Ordem atualizada");
     } catch (error) {
       console.error("Error updating complement order:", error);
-      toast.error("Erro ao atualizar ordem");
+      toast.error("Erro ao atualizar ordem de complementos");
     } finally {
       setSaving(false);
     }

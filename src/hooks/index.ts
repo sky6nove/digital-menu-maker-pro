@@ -8,7 +8,7 @@ export * from "./useComplementGroups";
 export * from "./useDataHelpers";
 export * from "./useGroupComplements";
 export * from "./useReorderMenu";
+export * from "./useProductMenuComplements";
 // Rename the direct import to avoid conflict with the one from productComplements
 export { useProductComplementGroups as useProductComplementGroupsLegacy } from "./useProductComplementGroups";
-export * from "./useProductMenuComplements";
 export * from "./useProducts";

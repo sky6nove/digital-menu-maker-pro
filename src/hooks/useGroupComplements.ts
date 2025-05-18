@@ -54,7 +54,7 @@ export const useGroupComplements = () => {
           id: item.id,
           name: item.name,
           groupId: groupId,
-          isActive: item.is_active,
+          isActive: item.is_active !== false,
           price: item.price || 0
         }));
         
@@ -65,9 +65,10 @@ export const useGroupComplements = () => {
       // Format the specific complements data for the component
       const complements = specificComplements.map(item => ({
         id: item.complement_id,
-        name: item.complements?.name || 'Unnamed Complement',
+        specificId: item.id, // Store the product_specific_complements ID
+        name: item.complements?.name || 'Complemento sem nome',
         groupId: groupId,
-        isActive: item.is_active,
+        isActive: item.is_active !== false,
         price: item.custom_price || item.complements?.price || 0
       }));
       
