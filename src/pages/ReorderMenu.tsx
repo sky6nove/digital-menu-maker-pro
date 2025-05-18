@@ -187,8 +187,49 @@ const ReorderMenu = () => {
 
   // Handle reordering for complements
   const handleComplementMove = async (id: number, direction: 'up' | 'down') => {
-    // This would implement reordering of complements
-    toast.info("Reordenação de complementos será implementada em breve");
+    if (!activeGroup) return;
+    
+    const currentIndex = groupComplements.findIndex(c => c.id === id);
+    if (
+      (direction === 'up' && currentIndex <= 0) || 
+      (direction === 'down' && currentIndex >= groupComplements.length - 1)
+    ) {
+      return; // Already at top/bottom
+    }
+    
+    try {
+      setSaving(true);
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      const targetComplement = groupComplements[targetIndex];
+      
+      // Update the product_specific_complements order
+      const { error: updateError } = await supabase
+        .from("product_specific_complements")
+        .update({ id: targetComplement.id })
+        .eq("complement_id", id)
+        .eq("complement_group_id", activeGroup);
+        
+      if (updateError) throw updateError;
+      
+      const { error: updateTargetError } = await supabase
+        .from("product_specific_complements")
+        .update({ id: groupComplements[currentIndex].id })
+        .eq("complement_id", targetComplement.id)
+        .eq("complement_group_id", activeGroup);
+        
+      if (updateTargetError) throw updateTargetError;
+      
+      // Reload complements
+      const updatedComplements = await fetchComplementsByGroup(activeGroup);
+      setGroupComplements(updatedComplements);
+      
+      toast.success("Ordem atualizada");
+    } catch (error) {
+      console.error("Error updating complement order:", error);
+      toast.error("Erro ao atualizar ordem");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Handle selecting a category to show its products
