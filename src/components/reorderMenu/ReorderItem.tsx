@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Move } from "lucide-react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface ReorderItemProps {
   id: number;
@@ -34,7 +34,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
     >
       <TableCell className="py-2">
         <div className="flex items-center gap-2">
-          <Move className="h-4 w-4 text-muted-foreground" />
           <span className={isActive ? "" : "line-through text-muted-foreground"}>
             {name}
           </span>
@@ -53,7 +52,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             className="h-7 w-7"
           >
             <span className="sr-only">Move up</span>
-            <Move className="h-3 w-3 rotate-90" />
+            <ArrowUp className="h-3 w-3" />
           </Button>
           <Button 
             variant="ghost" 
@@ -66,7 +65,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             className="h-7 w-7"
           >
             <span className="sr-only">Move down</span>
-            <Move className="h-3 w-3 -rotate-90" />
+            <ArrowDown className="h-3 w-3" />
           </Button>
         </div>
       </TableCell>
