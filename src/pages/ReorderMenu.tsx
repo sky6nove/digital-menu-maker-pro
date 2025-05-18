@@ -29,7 +29,7 @@ const ReorderMenu = () => {
   const { categories, loadCategories } = useCategories(user?.id);
   const { complementGroups, loadComplementGroups } = useComplementGroups();
   const { fetchComplementGroupsByProduct } = useProductComplementGroups();
-  const { fetchComplementsByGroup } = useGroupComplements();
+  const { fetchComplementsByGroup, loading: loadingComplements } = useGroupComplements();
   
   // State to track which section is active (categories, products, groups, complements)
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
@@ -95,8 +95,17 @@ const ReorderMenu = () => {
   useEffect(() => {
     const loadGroupComplements = async () => {
       if (activeGroup) {
-        const complements = await fetchComplementsByGroup(activeGroup);
-        setGroupComplements(complements);
+        try {
+          const complements = await fetchComplementsByGroup(activeGroup);
+          setGroupComplements(complements);
+          
+          if (complements.length === 0) {
+            console.log("No complements found for group", activeGroup);
+          }
+        } catch (error) {
+          console.error("Error loading complementes:", error);
+          toast.error("Erro ao carregar complementos");
+        }
       } else {
         setGroupComplements([]);
       }
@@ -351,6 +360,7 @@ const ReorderMenu = () => {
                   activeGroup={activeGroup}
                   groupName={activeGroupName}
                   handleComplementMove={handleComplementMove}
+                  loading={loadingComplements}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>

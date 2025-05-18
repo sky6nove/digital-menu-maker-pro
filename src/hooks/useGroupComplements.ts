@@ -13,7 +13,7 @@ export const useGroupComplements = () => {
     try {
       setLoading(true);
       
-      // First fetch all complements linked to this group
+      // First fetch all complements linked to this group through the product_specific_complements table
       const { data: specificComplements, error: specificError } = await supabase
         .from("product_specific_complements")
         .select(`
@@ -26,9 +26,43 @@ export const useGroupComplements = () => {
         .eq("complement_group_id", groupId)
         .order('id');
         
-      if (specificError) throw specificError;
+      if (specificError) {
+        console.error("Error fetching specific complements:", specificError);
+        throw specificError;
+      }
       
-      // Format the data for the component
+      // If no specific complements found, try fetching from complement_items
+      if (!specificComplements || specificComplements.length === 0) {
+        const { data: complementItems, error: itemsError } = await supabase
+          .from("complement_items")
+          .select(`
+            id,
+            name,
+            price,
+            is_active
+          `)
+          .eq("group_id", groupId)
+          .order('id');
+          
+        if (itemsError) {
+          console.error("Error fetching complement items:", itemsError);
+          throw itemsError;
+        }
+        
+        // Format the items data for the component
+        const formattedItems = (complementItems || []).map(item => ({
+          id: item.id,
+          name: item.name,
+          groupId: groupId,
+          isActive: item.is_active,
+          price: item.price || 0
+        }));
+        
+        setGroupComplements(formattedItems);
+        return formattedItems;
+      }
+      
+      // Format the specific complements data for the component
       const complements = specificComplements.map(item => ({
         id: item.complement_id,
         name: item.complements?.name || 'Unnamed Complement',

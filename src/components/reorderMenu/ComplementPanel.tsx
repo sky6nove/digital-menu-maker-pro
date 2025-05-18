@@ -1,5 +1,6 @@
 
 import React from "react";
+import { toast } from "sonner";
 import ReorderPanel from "./ReorderPanel";
 import ItemList from "./ItemList";
 
@@ -17,20 +18,27 @@ interface ComplementPanelProps {
   activeGroup: number | null;
   groupName?: string;
   handleComplementMove: (id: number, direction: 'up' | 'down') => void;
+  loading?: boolean;
 }
 
 const ComplementPanel: React.FC<ComplementPanelProps> = ({
   complements,
   activeGroup,
   groupName,
-  handleComplementMove
+  handleComplementMove,
+  loading = false
 }) => {
   return (
     <ReorderPanel 
       title={`Complementos${groupName ? ` - ${groupName}` : ''}`}
       emptyMessage="Selecione um grupo para visualizar seus complementos"
     >
-      {activeGroup && complements && complements.length > 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          <span className="ml-2">Carregando complementos...</span>
+        </div>
+      ) : activeGroup && complements && complements.length > 0 ? (
         <ItemList
           items={complements}
           onMoveUp={(id) => handleComplementMove(id, 'up')}
@@ -38,7 +46,13 @@ const ComplementPanel: React.FC<ComplementPanelProps> = ({
         />
       ) : activeGroup ? (
         <div className="flex items-center justify-center h-full text-muted-foreground">
-          Nenhum complemento encontrado neste grupo
+          Nenhum complemento encontrado neste grupo.
+          <button 
+            className="ml-1 text-primary underline hover:text-primary/80"
+            onClick={() => toast.info("Você pode adicionar complementos ao grupo na seção de Grupos de Complementos")}
+          >
+            Saiba mais
+          </button>
         </div>
       ) : null}
     </ReorderPanel>
