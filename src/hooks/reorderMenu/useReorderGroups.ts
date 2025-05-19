@@ -55,11 +55,27 @@ export const useReorderGroups = (
       for (let i = 0; i < updatedGroups.length; i++) {
         const { error } = await supabase
           .from("product_complement_groups")
-          .update({ order: i })
+          .update({ id: i + 1000 }) // Temporarily use a high ID to avoid conflicts
           .eq("id", updatedGroups[i].id);
           
         if (error) {
           console.error(`Error updating order for group ${updatedGroups[i].id}:`, error);
+          throw error;
+        }
+      }
+      
+      // Now update with the final IDs
+      for (let i = 0; i < updatedGroups.length; i++) {
+        const finalId = updatedGroups[i].id === id ? targetGroup.id : 
+                       updatedGroups[i].id === targetGroup.id ? id : updatedGroups[i].id;
+                       
+        const { error } = await supabase
+          .from("product_complement_groups")
+          .update({ id: finalId })
+          .eq("id", i + 1000);
+          
+        if (error) {
+          console.error(`Error finalizing order for group ${updatedGroups[i].id}:`, error);
           throw error;
         }
       }

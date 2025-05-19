@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,7 @@ export const useReorderComplements = (
     try {
       setSaving(true);
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      const targetComplement = groupComplements[targetIndex];
       
       // Create a temporary array to hold the updated complements order
       const updatedComplements = [...groupComplements];
@@ -59,32 +61,48 @@ export const useReorderComplements = (
       [updatedComplements[currentIndex], updatedComplements[targetIndex]] = 
         [updatedComplements[targetIndex], updatedComplements[currentIndex]];
       
-      // Update the database with the new order
-      // For each position, update the database record
+      // Update the database using a two-phase approach with temporary IDs
+      // Handle different tables based on the complement type
       for (let i = 0; i < updatedComplements.length; i++) {
-        // If we have a specificId (from product_specific_complements), use it
-        // Otherwise, directly update the complement's order
         if (updatedComplements[i].specificId) {
-          const { error } = await supabase
+          // For product_specific_complements
+          await supabase
             .from("product_specific_complements")
-            .update({ order: i })
+            .update({ id: i + 10000 }) // Temporary high ID
             .eq("id", updatedComplements[i].specificId);
-            
-          if (error) {
-            console.error(`Error updating order for complement ${updatedComplements[i].id}:`, error);
-            throw error;
-          }
         } else {
-          const { error } = await supabase
+          // For complement_items
+          await supabase
             .from("complement_items")
-            .update({ order: i })
+            .update({ id: i + 10000 }) // Temporary high ID
             .eq("id", updatedComplements[i].id)
             .eq("group_id", activeGroup);
-            
-          if (error) {
-            console.error(`Error updating order for complement item ${updatedComplements[i].id}:`, error);
-            throw error;
-          }
+        }
+      }
+      
+      // Now update with final IDs
+      for (let i = 0; i < updatedComplements.length; i++) {
+        const originalId = updatedComplements[i].id === id ? targetComplement.id : 
+                           updatedComplements[i].id === targetComplement.id ? id : 
+                           updatedComplements[i].id;
+        
+        if (updatedComplements[i].specificId) {
+          const originalSpecificId = updatedComplements[i].specificId === updatedComplements[currentIndex].specificId ? 
+                                    updatedComplements[targetIndex].specificId : 
+                                    updatedComplements[i].specificId === updatedComplements[targetIndex].specificId ? 
+                                    updatedComplements[currentIndex].specificId : 
+                                    updatedComplements[i].specificId;
+                                    
+          await supabase
+            .from("product_specific_complements")
+            .update({ id: originalSpecificId })
+            .eq("id", i + 10000);
+        } else {
+          await supabase
+            .from("complement_items")
+            .update({ id: originalId })
+            .eq("id", i + 10000)
+            .eq("group_id", activeGroup);
         }
       }
       
