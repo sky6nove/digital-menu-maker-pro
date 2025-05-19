@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Product, ComplementItem } from "@/types";
 import { useProductMenuComplements } from "@/hooks/useProductMenuComplements";
 import ProductComplementSelector from "@/components/ProductComplementSelector";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 interface ProductDialogProps {
   product: Product | null;
@@ -38,9 +38,11 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
     
     // Add complement prices
     Object.values(selectedComplements).forEach(groupItems => {
-      groupItems.forEach(item => {
-        total += (item.price || 0) * (item.quantity || 1);
-      });
+      if (groupItems && Array.isArray(groupItems)) {
+        groupItems.forEach(item => {
+          total += (item.price || 0) * (item.quantity || 1);
+        });
+      }
     });
     
     setTotalPrice(total);
@@ -57,7 +59,7 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
     if (!product) return;
     
     // Check if all required groups have their minimum quantity met
-    const missingRequired = productComplementGroups.find(({ group, isRequired }) => {
+    const missingRequired = productComplementGroups && productComplementGroups.find(({ group, isRequired }) => {
       if (!isRequired) return false;
       
       const groupSelections = selectedComplements[group.id] || [];
@@ -67,7 +69,7 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
     });
     
     if (missingRequired) {
-      alert(`Por favor, selecione os itens obrigatórios do grupo "${missingRequired.group.name}"`);
+      toast.error(`Por favor, selecione os itens obrigatórios do grupo "${missingRequired.group.name}"`);
       return;
     }
     
@@ -110,7 +112,7 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
             <div className="py-8 flex justify-center">
               <div className="animate-spin h-6 w-6 border-2 border-menu-accent border-t-transparent rounded-full"></div>
             </div>
-          ) : productComplementGroups.length > 0 ? (
+          ) : productComplementGroups && productComplementGroups.length > 0 ? (
             <ProductComplementSelector
               complementGroups={productComplementGroups}
               onSelect={handleComplementSelect}
