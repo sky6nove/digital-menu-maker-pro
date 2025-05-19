@@ -21,10 +21,11 @@ export const useGroupComplements = () => {
           complement_id,
           is_active,
           custom_price,
+          "order",
           complements:complement_id(id, name, price, is_active)
         `)
         .eq("complement_group_id", groupId)
-        .order('id');
+        .order('order');
         
       if (specificError) {
         console.error("Error fetching specific complements:", specificError);
@@ -39,10 +40,11 @@ export const useGroupComplements = () => {
             id,
             name,
             price,
-            is_active
+            is_active,
+            "order"
           `)
           .eq("group_id", groupId)
-          .order('id');
+          .order('order');
           
         if (itemsError) {
           console.error("Error fetching complement items:", itemsError);
@@ -55,7 +57,8 @@ export const useGroupComplements = () => {
           name: item.name,
           groupId: groupId,
           isActive: item.is_active !== false,
-          price: item.price || 0
+          price: item.price || 0,
+          order: item.order
         }));
         
         setGroupComplements(formattedItems);
@@ -69,7 +72,8 @@ export const useGroupComplements = () => {
         name: item.complements?.name || 'Complemento sem nome',
         groupId: groupId,
         isActive: item.is_active !== false,
-        price: item.custom_price || item.complements?.price || 0
+        price: item.custom_price || item.complements?.price || 0,
+        order: item.order
       }));
       
       setGroupComplements(complements);

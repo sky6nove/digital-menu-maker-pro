@@ -54,56 +54,43 @@ export const useReorderComplements = (
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       const targetComplement = groupComplements[targetIndex];
       
-      // Create a temporary array to hold the updated complements order
-      const updatedComplements = [...groupComplements];
+      // Get the current order values
+      const currentOrder = groupComplements[currentIndex].order ?? currentIndex;
+      const targetOrder = targetComplement.order ?? targetIndex;
       
-      // Swap the positions in the array
-      [updatedComplements[currentIndex], updatedComplements[targetIndex]] = 
-        [updatedComplements[targetIndex], updatedComplements[currentIndex]];
-      
-      // Update the database using a two-phase approach with temporary IDs
-      // Handle different tables based on the complement type
-      for (let i = 0; i < updatedComplements.length; i++) {
-        if (updatedComplements[i].specificId) {
-          // For product_specific_complements
-          await supabase
-            .from("product_specific_complements")
-            .update({ id: i + 10000 }) // Temporary high ID
-            .eq("id", updatedComplements[i].specificId);
-        } else {
-          // For complement_items
-          await supabase
-            .from("complement_items")
-            .update({ id: i + 10000 }) // Temporary high ID
-            .eq("id", updatedComplements[i].id)
-            .eq("group_id", activeGroup);
-        }
-      }
-      
-      // Now update with final IDs
-      for (let i = 0; i < updatedComplements.length; i++) {
-        const originalId = updatedComplements[i].id === id ? targetComplement.id : 
-                           updatedComplements[i].id === targetComplement.id ? id : 
-                           updatedComplements[i].id;
+      // Swap the order values in the database based on the complement type
+      if (groupComplements[currentIndex].specificId) {
+        // For product_specific_complements
+        const { error: updateError } = await supabase
+          .from("product_specific_complements")
+          .update({ order: targetOrder })
+          .eq("id", groupComplements[currentIndex].specificId);
+          
+        if (updateError) throw updateError;
         
-        if (updatedComplements[i].specificId) {
-          const originalSpecificId = updatedComplements[i].specificId === updatedComplements[currentIndex].specificId ? 
-                                    updatedComplements[targetIndex].specificId : 
-                                    updatedComplements[i].specificId === updatedComplements[targetIndex].specificId ? 
-                                    updatedComplements[currentIndex].specificId : 
-                                    updatedComplements[i].specificId;
-                                    
-          await supabase
-            .from("product_specific_complements")
-            .update({ id: originalSpecificId })
-            .eq("id", i + 10000);
-        } else {
-          await supabase
-            .from("complement_items")
-            .update({ id: originalId })
-            .eq("id", i + 10000)
-            .eq("group_id", activeGroup);
-        }
+        const { error: updateTargetError } = await supabase
+          .from("product_specific_complements")
+          .update({ order: currentOrder })
+          .eq("id", targetComplement.specificId);
+          
+        if (updateTargetError) throw updateTargetError;
+      } else {
+        // For complement_items
+        const { error: updateError } = await supabase
+          .from("complement_items")
+          .update({ order: targetOrder })
+          .eq("id", groupComplements[currentIndex].id)
+          .eq("group_id", activeGroup);
+          
+        if (updateError) throw updateError;
+        
+        const { error: updateTargetError } = await supabase
+          .from("complement_items")
+          .update({ order: currentOrder })
+          .eq("id", targetComplement.id)
+          .eq("group_id", activeGroup);
+          
+        if (updateTargetError) throw updateTargetError;
       }
       
       // Reload complements

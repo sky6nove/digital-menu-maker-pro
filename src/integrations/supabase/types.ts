@@ -103,6 +103,7 @@ export type Database = {
           id: number
           is_active: boolean
           name: string
+          order: number | null
           price: number | null
           product_id: number | null
           updated_at: string | null
@@ -113,6 +114,7 @@ export type Database = {
           id?: number
           is_active?: boolean
           name: string
+          order?: number | null
           price?: number | null
           product_id?: number | null
           updated_at?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           id?: number
           is_active?: boolean
           name?: string
+          order?: number | null
           price?: number | null
           product_id?: number | null
           updated_at?: string | null
@@ -189,6 +192,7 @@ export type Database = {
           created_at: string | null
           id: number
           is_required: boolean | null
+          order: number | null
           product_id: number
           user_id: string | null
         }
@@ -197,6 +201,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           is_required?: boolean | null
+          order?: number | null
           product_id: number
           user_id?: string | null
         }
@@ -205,6 +210,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           is_required?: boolean | null
+          order?: number | null
           product_id?: number
           user_id?: string | null
         }
@@ -310,6 +316,7 @@ export type Database = {
           custom_price: number | null
           id: number
           is_active: boolean | null
+          order: number | null
           product_id: number
           user_id: string | null
         }
@@ -320,6 +327,7 @@ export type Database = {
           custom_price?: number | null
           id?: number
           is_active?: boolean | null
+          order?: number | null
           product_id: number
           user_id?: string | null
         }
@@ -330,6 +338,7 @@ export type Database = {
           custom_price?: number | null
           id?: number
           is_active?: boolean | null
+          order?: number | null
           product_id?: number
           user_id?: string | null
         }

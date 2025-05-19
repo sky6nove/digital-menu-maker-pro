@@ -21,10 +21,11 @@ export const useProductComplementGroups = () => {
         .select(`
           id,
           complement_group_id,
+          "order",
           complement_groups:complement_group_id(*)
         `)
         .eq("product_id", productId)
-        .order('id');
+        .order('order');
         
       if (error) throw error;
       
@@ -34,7 +35,7 @@ export const useProductComplementGroups = () => {
         productGroupId: item.id,
         name: item.complement_groups?.name || 'Unnamed Group',
         isActive: item.complement_groups?.is_active || false,
-        // Include any other needed properties 
+        order: item.order
       }));
       
       setProductComplementGroups(formattedGroups);
