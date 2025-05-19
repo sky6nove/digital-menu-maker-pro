@@ -43,24 +43,30 @@ export const useReorderGroups = (
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       const targetGroup = productGroups[targetIndex];
       
-      // Swap the order in product_complement_groups table
-      const { error: updateError } = await supabase
-        .from("product_complement_groups")
-        .update({ id: targetGroup.productGroupId })
-        .eq("id", productGroups[currentIndex].productGroupId);
-        
-      if (updateError) throw updateError;
+      // Create a temporary array to hold the updated groups order
+      const updatedGroups = [...productGroups];
       
-      const { error: updateTargetError } = await supabase
-        .from("product_complement_groups")
-        .update({ id: productGroups[currentIndex].productGroupId })
-        .eq("id", targetGroup.productGroupId);
-        
-      if (updateTargetError) throw updateTargetError;
+      // Swap the positions in the array
+      [updatedGroups[currentIndex], updatedGroups[targetIndex]] = 
+        [updatedGroups[targetIndex], updatedGroups[currentIndex]];
+      
+      // Update the database with the new order
+      // For each position, update the database record
+      for (let i = 0; i < updatedGroups.length; i++) {
+        const { error } = await supabase
+          .from("product_complement_groups")
+          .update({ order: i })
+          .eq("id", updatedGroups[i].id);
+          
+        if (error) {
+          console.error(`Error updating order for group ${updatedGroups[i].id}:`, error);
+          throw error;
+        }
+      }
       
       // Reload product groups
-      const updatedGroups = await fetchComplementGroupsByProduct(activeProduct);
-      setProductGroups(updatedGroups);
+      const updatedGroupsData = await fetchComplementGroupsByProduct(activeProduct);
+      setProductGroups(updatedGroupsData);
       
       toast.success("Ordem atualizada");
     } catch (error) {

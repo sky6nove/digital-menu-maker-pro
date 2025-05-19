@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,46 +51,46 @@ export const useReorderComplements = (
     try {
       setSaving(true);
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      const targetComplement = groupComplements[targetIndex];
       
-      // Find the source entry for the current complement
-      const { data: sourceData, error: sourceError } = await supabase
-        .from("product_specific_complements")
-        .select("id")
-        .eq("complement_id", id)
-        .eq("complement_group_id", activeGroup)
-        .single();
-        
-      if (sourceError) throw sourceError;
+      // Create a temporary array to hold the updated complements order
+      const updatedComplements = [...groupComplements];
       
-      // Find the target entry for the target complement
-      const { data: targetData, error: targetError } = await supabase
-        .from("product_specific_complements")
-        .select("id")
-        .eq("complement_id", targetComplement.id)
-        .eq("complement_group_id", activeGroup)
-        .single();
-        
-      if (targetError) throw targetError;
+      // Swap the positions in the array
+      [updatedComplements[currentIndex], updatedComplements[targetIndex]] = 
+        [updatedComplements[targetIndex], updatedComplements[currentIndex]];
       
-      // Swap the IDs (which affects the order)
-      const { error: updateSourceError } = await supabase
-        .from("product_specific_complements")
-        .update({ id: targetData.id })
-        .eq("id", sourceData.id);
-        
-      if (updateSourceError) throw updateSourceError;
-      
-      const { error: updateTargetError } = await supabase
-        .from("product_specific_complements")
-        .update({ id: sourceData.id })
-        .eq("id", targetData.id);
-        
-      if (updateTargetError) throw updateTargetError;
+      // Update the database with the new order
+      // For each position, update the database record
+      for (let i = 0; i < updatedComplements.length; i++) {
+        // If we have a specificId (from product_specific_complements), use it
+        // Otherwise, directly update the complement's order
+        if (updatedComplements[i].specificId) {
+          const { error } = await supabase
+            .from("product_specific_complements")
+            .update({ order: i })
+            .eq("id", updatedComplements[i].specificId);
+            
+          if (error) {
+            console.error(`Error updating order for complement ${updatedComplements[i].id}:`, error);
+            throw error;
+          }
+        } else {
+          const { error } = await supabase
+            .from("complement_items")
+            .update({ order: i })
+            .eq("id", updatedComplements[i].id)
+            .eq("group_id", activeGroup);
+            
+          if (error) {
+            console.error(`Error updating order for complement item ${updatedComplements[i].id}:`, error);
+            throw error;
+          }
+        }
+      }
       
       // Reload complements
-      const updatedComplements = await fetchComplementsByGroup(activeGroup);
-      setGroupComplements(updatedComplements);
+      const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
+      setGroupComplements(updatedComplementsData);
       
       toast.success("Ordem atualizada");
     } catch (error) {
