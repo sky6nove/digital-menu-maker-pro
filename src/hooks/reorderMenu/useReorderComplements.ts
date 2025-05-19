@@ -58,39 +58,66 @@ export const useReorderComplements = (
       const currentOrder = groupComplements[currentIndex].order ?? currentIndex;
       const targetOrder = targetComplement.order ?? targetIndex;
       
-      // Swap the order values in the database based on the complement type
+      // Determine which table to update based on complement type
       if (groupComplements[currentIndex].specificId) {
-        // For product_specific_complements
+        console.log("Updating product_specific_complements order", {
+          currentId: groupComplements[currentIndex].specificId,
+          targetId: targetComplement.specificId,
+          currentOrder,
+          targetOrder
+        });
+        
+        // First complement update
         const { error: updateError } = await supabase
           .from("product_specific_complements")
           .update({ order: targetOrder })
           .eq("id", groupComplements[currentIndex].specificId);
           
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error("Error updating first complement:", updateError);
+          throw updateError;
+        }
         
+        // Second complement update
         const { error: updateTargetError } = await supabase
           .from("product_specific_complements")
           .update({ order: currentOrder })
           .eq("id", targetComplement.specificId);
           
-        if (updateTargetError) throw updateTargetError;
+        if (updateTargetError) {
+          console.error("Error updating second complement:", updateTargetError);
+          throw updateTargetError;
+        }
       } else {
-        // For complement_items
+        console.log("Updating complement_items order", {
+          currentId: groupComplements[currentIndex].id,
+          targetId: targetComplement.id,
+          currentOrder,
+          targetOrder,
+          groupId: activeGroup
+        });
+        
+        // First complement item update
         const { error: updateError } = await supabase
           .from("complement_items")
           .update({ order: targetOrder })
-          .eq("id", groupComplements[currentIndex].id)
-          .eq("group_id", activeGroup);
+          .eq("id", groupComplements[currentIndex].id);
           
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error("Error updating first complement item:", updateError);
+          throw updateError;
+        }
         
+        // Second complement item update
         const { error: updateTargetError } = await supabase
           .from("complement_items")
           .update({ order: currentOrder })
-          .eq("id", targetComplement.id)
-          .eq("group_id", activeGroup);
+          .eq("id", targetComplement.id);
           
-        if (updateTargetError) throw updateTargetError;
+        if (updateTargetError) {
+          console.error("Error updating second complement item:", updateTargetError);
+          throw updateTargetError;
+        }
       }
       
       // Reload complements
