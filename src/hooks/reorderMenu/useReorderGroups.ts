@@ -108,3 +108,6 @@ export const useReorderGroups = (
     handleGroupSelect
   };
 };
+
+// Export the named function for direct importing
+export { useReorderGroups as default };
