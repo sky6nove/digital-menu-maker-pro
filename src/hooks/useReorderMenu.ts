@@ -1,33 +1,54 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProducts } from "./useProducts";
 import { useCategories } from "./useCategories";
 import { useComplementGroups } from "./useComplementGroups";
 import { useProductComplementGroups } from "./useProductComplementGroups";
 import { useGroupComplements } from "./useGroupComplements";
+import { useReorderCategories } from "./reorderMenu/useReorderCategories";
+import { useReorderProducts } from "./reorderMenu/useReorderProducts";
+import { useReorderGroups } from "./reorderMenu/useReorderGroups";
+import { useReorderComplements } from "./reorderMenu/useReorderComplements";
 
 export const useReorderMenu = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   
   // Import hooks
   const { products, loadProducts } = useProducts(user?.id);
   const { categories, loadCategories } = useCategories(user?.id);
   const { complementGroups, loadComplementGroups } = useComplementGroups();
   const { fetchComplementGroupsByProduct } = useProductComplementGroups();
-  const { fetchComplementsByGroup, loading: loadingComplements } = useGroupComplements();
+  const { fetchComplementsByGroup } = useGroupComplements();
   
-  // State management
-  const [activeCategory, setActiveCategory] = useState<number | null>(null);
-  const [activeProduct, setActiveProduct] = useState<number | null>(null);
-  const [activeGroup, setActiveGroup] = useState<number | null>(null);
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [productGroups, setProductGroups] = useState<any[]>([]);
-  const [groupComplements, setGroupComplements] = useState<any[]>([]);
+  // Init specialized hooks
+  const { 
+    activeCategory, 
+    handleCategoryMove, 
+    handleCategorySelect
+  } = useReorderCategories(categories, loadCategories);
+  
+  const { 
+    filteredProducts, 
+    activeProduct, 
+    handleProductMove, 
+    handleProductSelect 
+  } = useReorderProducts(products, activeCategory, loadProducts);
+  
+  const { 
+    productGroups, 
+    activeGroup, 
+    handleGroupMove, 
+    handleGroupSelect 
+  } = useReorderGroups(activeProduct, fetchComplementGroupsByProduct);
+  
+  const { 
+    groupComplements, 
+    loadingComplements, 
+    handleComplementMove 
+  } = useReorderComplements(activeGroup, fetchComplementsByGroup);
 
   // Load all data
   useEffect(() => {
@@ -50,283 +71,11 @@ export const useReorderMenu = () => {
 
       fetchData();
     }
-  }, [user]);
-
-  // Update filtered products when activeCategory changes
-  useEffect(() => {
-    if (activeCategory) {
-      setFilteredProducts(products.filter(p => p.categoryId === activeCategory));
-      setActiveProduct(null); // Reset product selection
-      setActiveGroup(null); // Reset group selection
-      setProductGroups([]); // Clear product groups
-      setGroupComplements([]); // Clear group complements
-    } else {
-      setFilteredProducts([]);
-    }
-  }, [activeCategory, products]);
-
-  // Load product complement groups when a product is selected
-  useEffect(() => {
-    const loadProductGroups = async () => {
-      if (activeProduct) {
-        const groups = await fetchComplementGroupsByProduct(activeProduct);
-        setProductGroups(groups);
-      } else {
-        setProductGroups([]);
-      }
-      setActiveGroup(null); // Reset group selection
-      setGroupComplements([]); // Clear group complements
-    };
-
-    loadProductGroups();
-  }, [activeProduct]);
-
-  // Load complements when a group is selected
-  useEffect(() => {
-    const loadGroupComplements = async () => {
-      if (activeGroup) {
-        try {
-          const complements = await fetchComplementsByGroup(activeGroup);
-          setGroupComplements(complements);
-          
-          if (complements.length === 0) {
-            console.log("No complements found for group", activeGroup);
-          }
-        } catch (error) {
-          console.error("Error loading complementes:", error);
-          toast.error("Erro ao carregar complementos");
-        }
-      } else {
-        setGroupComplements([]);
-      }
-    };
-
-    loadGroupComplements();
-  }, [activeGroup]);
-
-  // Handle reordering for products
-  const handleProductMove = async (id: number, direction: 'up' | 'down') => {
-    const currentIndex = filteredProducts.findIndex(p => p.id === id);
-    if (
-      (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= filteredProducts.length - 1)
-    ) {
-      return; // Already at top/bottom
-    }
-    
-    try {
-      setSaving(true);
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      const targetProduct = filteredProducts[targetIndex];
-      
-      // Get the current display_order values
-      const currentDisplayOrder = filteredProducts[currentIndex].display_order ?? currentIndex;
-      const targetDisplayOrder = targetProduct.display_order ?? targetIndex;
-      
-      // Swap display_order values
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({ display_order: targetDisplayOrder })
-        .eq("id", id);
-        
-      if (updateError) throw updateError;
-      
-      const { error: updateTargetError } = await supabase
-        .from("products")
-        .update({ display_order: currentDisplayOrder })
-        .eq("id", targetProduct.id);
-        
-      if (updateTargetError) throw updateTargetError;
-      
-      await loadProducts(); // Reload products
-      
-      // Update the local filtered products list
-      const updatedFilteredProducts = [...filteredProducts];
-      [updatedFilteredProducts[currentIndex], updatedFilteredProducts[targetIndex]] = 
-        [updatedFilteredProducts[targetIndex], updatedFilteredProducts[currentIndex]];
-      setFilteredProducts(updatedFilteredProducts);
-      
-      toast.success("Ordem atualizada");
-    } catch (error) {
-      console.error("Error updating product order:", error);
-      toast.error("Erro ao atualizar ordem");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Handle reordering for categories
-  const handleCategoryMove = async (id: number, direction: 'up' | 'down') => {
-    const currentIndex = categories.findIndex(c => c.id === id);
-    if (
-      (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= categories.length - 1)
-    ) {
-      return; // Already at top/bottom
-    }
-    
-    try {
-      setSaving(true);
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      const targetCategory = categories[targetIndex];
-      
-      // Swap order values
-      const { error: updateError } = await supabase
-        .from("categories")
-        .update({ order: targetCategory.order })
-        .eq("id", id);
-        
-      if (updateError) throw updateError;
-      
-      const { error: updateTargetError } = await supabase
-        .from("categories")
-        .update({ order: categories[currentIndex].order })
-        .eq("id", targetCategory.id);
-        
-      if (updateTargetError) throw updateTargetError;
-      
-      await loadCategories(); // Reload categories
-      toast.success("Ordem atualizada");
-    } catch (error) {
-      console.error("Error updating category order:", error);
-      toast.error("Erro ao atualizar ordem");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Handle reordering for complement groups
-  const handleGroupMove = async (id: number, direction: 'up' | 'down') => {
-    if (!activeProduct) return;
-    
-    const currentIndex = productGroups.findIndex(g => g.id === id);
-    if (
-      (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= productGroups.length - 1)
-    ) {
-      return; // Already at top/bottom
-    }
-    
-    try {
-      setSaving(true);
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      const targetGroup = productGroups[targetIndex];
-      
-      // Swap the order in product_complement_groups table
-      // We need to use the productGroupId which is the id in the product_complement_groups table
-      const { error: updateError } = await supabase
-        .from("product_complement_groups")
-        .update({ id: targetGroup.productGroupId })
-        .eq("id", productGroups[currentIndex].productGroupId);
-        
-      if (updateError) throw updateError;
-      
-      const { error: updateTargetError } = await supabase
-        .from("product_complement_groups")
-        .update({ id: productGroups[currentIndex].productGroupId })
-        .eq("id", targetGroup.productGroupId);
-        
-      if (updateTargetError) throw updateTargetError;
-      
-      // Reload product groups
-      const updatedGroups = await fetchComplementGroupsByProduct(activeProduct);
-      setProductGroups(updatedGroups);
-      
-      toast.success("Ordem atualizada");
-    } catch (error) {
-      console.error("Error updating group order:", error);
-      toast.error("Erro ao atualizar ordem de grupos");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Handle reordering for complements
-  const handleComplementMove = async (id: number, direction: 'up' | 'down') => {
-    if (!activeGroup) return;
-    
-    const currentIndex = groupComplements.findIndex(c => c.id === id);
-    if (
-      (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= groupComplements.length - 1)
-    ) {
-      return; // Already at top/bottom
-    }
-    
-    try {
-      setSaving(true);
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      const targetComplement = groupComplements[targetIndex];
-      
-      // Find the source entry for the current complement
-      const { data: sourceData, error: sourceError } = await supabase
-        .from("product_specific_complements")
-        .select("id")
-        .eq("complement_id", id)
-        .eq("complement_group_id", activeGroup)
-        .single();
-        
-      if (sourceError) throw sourceError;
-      
-      // Find the target entry for the target complement
-      const { data: targetData, error: targetError } = await supabase
-        .from("product_specific_complements")
-        .select("id")
-        .eq("complement_id", targetComplement.id)
-        .eq("complement_group_id", activeGroup)
-        .single();
-        
-      if (targetError) throw targetError;
-      
-      // Swap the IDs (which affects the order)
-      const { error: updateSourceError } = await supabase
-        .from("product_specific_complements")
-        .update({ id: targetData.id })
-        .eq("id", sourceData.id);
-        
-      if (updateSourceError) throw updateSourceError;
-      
-      const { error: updateTargetError } = await supabase
-        .from("product_specific_complements")
-        .update({ id: sourceData.id })
-        .eq("id", targetData.id);
-        
-      if (updateTargetError) throw updateTargetError;
-      
-      // Reload complements
-      const updatedComplements = await fetchComplementsByGroup(activeGroup);
-      setGroupComplements(updatedComplements);
-      
-      toast.success("Ordem atualizada");
-    } catch (error) {
-      console.error("Error updating complement order:", error);
-      toast.error("Erro ao atualizar ordem de complementos");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Selection handlers
-  const handleCategorySelect = (categoryId: number) => {
-    setActiveCategory(activeCategory === categoryId ? null : categoryId);
-    setActiveProduct(null);
-    setActiveGroup(null);
-  };
-
-  const handleProductSelect = (productId: number) => {
-    setActiveProduct(activeProduct === productId ? null : productId);
-    setActiveGroup(null);
-  };
-
-  const handleGroupSelect = (groupId: number) => {
-    setActiveGroup(activeGroup === groupId ? null : groupId);
-  };
+  }, [user, loadCategories, loadProducts, loadComplementGroups]);
 
   // Handle save & close actions
   const handleSave = async () => {
-    setSaving(true);
     toast.success("Ordem salva com sucesso");
-    setSaving(false);
     return true;
   };
 
@@ -345,7 +94,7 @@ export const useReorderMenu = () => {
 
   return {
     loading,
-    saving,
+    saving: false,
     categories,
     filteredProducts,
     productGroups,
