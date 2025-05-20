@@ -13,7 +13,7 @@ export const useGroupComplements = () => {
     try {
       setLoading(true);
       
-      // First fetch all complements linked to this group through the product_specific_complements table
+      // First try to fetch product-specific complements
       const { data: specificComplements, error: specificError } = await supabase
         .from("product_specific_complements")
         .select(`
@@ -32,52 +32,53 @@ export const useGroupComplements = () => {
         throw specificError;
       }
       
-      // If no specific complements found, try fetching from complement_items
-      if (!specificComplements || specificComplements.length === 0) {
-        const { data: complementItems, error: itemsError } = await supabase
-          .from("complement_items")
-          .select(`
-            id,
-            name,
-            price,
-            is_active,
-            "order"
-          `)
-          .eq("group_id", groupId)
-          .order('order');
-          
-        if (itemsError) {
-          console.error("Error fetching complement items:", itemsError);
-          throw itemsError;
-        }
-        
-        // Format the items data for the component
-        const formattedItems = (complementItems || []).map(item => ({
-          id: item.id,
-          name: item.name,
+      // If specific complements found, format and return them
+      if (specificComplements && specificComplements.length > 0) {
+        // Format the specific complements data for the component
+        const complements = (specificComplements || []).map(item => ({
+          id: item.complement_id,
+          specificId: item.id, // Store the product_specific_complements ID
+          name: item.complements?.name || 'Complemento sem nome',
           groupId: groupId,
           isActive: item.is_active !== false,
-          price: item.price || 0,
+          price: item.custom_price || item.complements?.price || 0,
           order: item.order
         }));
         
-        setGroupComplements(formattedItems);
-        return formattedItems;
+        setGroupComplements(complements);
+        return complements;
       }
       
-      // Format the specific complements data for the component
-      const complements = (specificComplements || []).map(item => ({
-        id: item.complement_id,
-        specificId: item.id, // Store the product_specific_complements ID
-        name: item.complements?.name || 'Complemento sem nome',
+      // If no specific complements, try fetching from complement_items
+      const { data: complementItems, error: itemsError } = await supabase
+        .from("complement_items")
+        .select(`
+          id,
+          name,
+          price,
+          is_active,
+          "order"
+        `)
+        .eq("group_id", groupId)
+        .order('order');
+          
+      if (itemsError) {
+        console.error("Error fetching complement items:", itemsError);
+        throw itemsError;
+      }
+      
+      // Format the items data for the component
+      const formattedItems = (complementItems || []).map(item => ({
+        id: item.id,
+        name: item.name,
         groupId: groupId,
         isActive: item.is_active !== false,
-        price: item.custom_price || item.complements?.price || 0,
+        price: item.price || 0,
         order: item.order
       }));
       
-      setGroupComplements(complements);
-      return complements;
+      setGroupComplements(formattedItems);
+      return formattedItems;
     } catch (error: any) {
       console.error("Error fetching group complements:", error);
       toast.error("Erro ao carregar complementos do grupo");
