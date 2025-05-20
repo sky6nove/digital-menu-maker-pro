@@ -50,26 +50,40 @@ export const useReorderGroups = (
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       const targetGroup = productGroups[targetIndex];
       
-      // Get the current order values
+      // Get the current order values or use indices as fallback
       const currentOrder = productGroups[currentIndex].order ?? currentIndex;
       const targetOrder = targetGroup.order ?? targetIndex;
       
-      // Swap the order values in the database
+      console.log("Updating group orders:", {
+        currentId: productGroups[currentIndex].productGroupId,
+        targetId: targetGroup.productGroupId,
+        currentOrder,
+        targetOrder
+      });
+      
+      // Update first group's order
       const { error: updateError } = await supabase
         .from("product_complement_groups")
         .update({ order: targetOrder })
         .eq("id", productGroups[currentIndex].productGroupId);
         
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Error updating first group:", updateError);
+        throw updateError;
+      }
       
+      // Update second group's order
       const { error: updateTargetError } = await supabase
         .from("product_complement_groups")
         .update({ order: currentOrder })
         .eq("id", targetGroup.productGroupId);
         
-      if (updateTargetError) throw updateTargetError;
+      if (updateTargetError) {
+        console.error("Error updating second group:", updateTargetError);
+        throw updateTargetError;
+      }
       
-      // Reload product groups
+      // Reload product groups to reflect the updated order
       const updatedGroupsData = await fetchComplementGroupsByProduct(activeProduct);
       setProductGroups(updatedGroupsData || []);
       
