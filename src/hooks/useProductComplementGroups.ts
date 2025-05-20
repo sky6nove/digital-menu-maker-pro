@@ -30,13 +30,13 @@ export const useProductComplementGroups = () => {
       if (error) throw error;
       
       // Format the data for easier use in the components
-      const formattedGroups = data.map(item => ({
+      const formattedGroups = data ? data.map(item => ({
         id: item.complement_group_id,
         productGroupId: item.id,
         name: item.complement_groups?.name || 'Unnamed Group',
         isActive: item.complement_groups?.is_active || false,
         order: item.order
-      }));
+      })) : [];
       
       setProductComplementGroups(formattedGroups);
       return formattedGroups;

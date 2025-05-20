@@ -66,7 +66,7 @@ export const useGroupComplements = () => {
       }
       
       // Format the specific complements data for the component
-      const complements = specificComplements.map(item => ({
+      const complements = (specificComplements || []).map(item => ({
         id: item.complement_id,
         specificId: item.id, // Store the product_specific_complements ID
         name: item.complements?.name || 'Complemento sem nome',

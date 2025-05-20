@@ -18,7 +18,7 @@ export const useReorderComplements = (
         setLoadingComplements(true);
         try {
           const complements = await fetchComplementsByGroup(activeGroup);
-          setGroupComplements(complements);
+          setGroupComplements(complements || []);
           
           if (complements.length === 0) {
             console.log("No complements found for group", activeGroup);
@@ -26,6 +26,7 @@ export const useReorderComplements = (
         } catch (error) {
           console.error("Error loading complementes:", error);
           toast.error("Erro ao carregar complementos");
+          setGroupComplements([]);
         } finally {
           setLoadingComplements(false);
         }
@@ -39,9 +40,11 @@ export const useReorderComplements = (
 
   // Handle reordering for complements
   const handleComplementMove = async (id: number, direction: 'up' | 'down') => {
-    if (!activeGroup) return;
+    if (!activeGroup || !groupComplements || groupComplements.length === 0) return;
     
     const currentIndex = groupComplements.findIndex(c => c.id === id);
+    if (currentIndex === -1) return;
+    
     if (
       (direction === 'up' && currentIndex <= 0) || 
       (direction === 'down' && currentIndex >= groupComplements.length - 1)
@@ -122,7 +125,7 @@ export const useReorderComplements = (
       
       // Reload complements
       const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
-      setGroupComplements(updatedComplementsData);
+      setGroupComplements(updatedComplementsData || []);
       
       toast.success("Ordem atualizada");
     } catch (error) {

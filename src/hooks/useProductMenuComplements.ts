@@ -35,7 +35,7 @@ export const useProductMenuComplements = (productId?: number) => {
       if (error) throw error;
       
       // Transform the data for easier use
-      const formattedGroups = data.map(item => ({
+      const formattedGroups = (data || []).map(item => ({
         id: item.id,
         group: {
           id: item.complement_groups.id,

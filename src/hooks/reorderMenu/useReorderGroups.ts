@@ -15,8 +15,13 @@ export const useReorderGroups = (
   useEffect(() => {
     const loadProductGroups = async () => {
       if (activeProduct) {
-        const groups = await fetchComplementGroupsByProduct(activeProduct);
-        setProductGroups(groups);
+        try {
+          const groups = await fetchComplementGroupsByProduct(activeProduct);
+          setProductGroups(groups || []);
+        } catch (error) {
+          console.error("Error loading product groups:", error);
+          setProductGroups([]);
+        }
       } else {
         setProductGroups([]);
       }
@@ -28,9 +33,11 @@ export const useReorderGroups = (
 
   // Handle reordering for complement groups
   const handleGroupMove = async (id: number, direction: 'up' | 'down') => {
-    if (!activeProduct) return;
+    if (!activeProduct || !productGroups || productGroups.length === 0) return;
     
     const currentIndex = productGroups.findIndex(g => g.id === id);
+    if (currentIndex === -1) return;
+    
     if (
       (direction === 'up' && currentIndex <= 0) || 
       (direction === 'down' && currentIndex >= productGroups.length - 1)
@@ -64,7 +71,7 @@ export const useReorderGroups = (
       
       // Reload product groups
       const updatedGroupsData = await fetchComplementGroupsByProduct(activeProduct);
-      setProductGroups(updatedGroupsData);
+      setProductGroups(updatedGroupsData || []);
       
       toast.success("Ordem atualizada");
     } catch (error) {

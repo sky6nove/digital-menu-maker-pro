@@ -12,8 +12,8 @@ interface ComplementsTabProps {
 }
 
 const ComplementsTab = ({
-  availableComplements,
-  selectedComplements,
+  availableComplements = [], // Provide default empty array if undefined
+  selectedComplements = [], // Provide default empty array if undefined
   toggleComplement,
   loadComplements
 }: ComplementsTabProps) => {

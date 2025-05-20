@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { ComplementGroup, ProductComplementGroup } from "@/types";
 import { GroupItem } from "./GroupItem";
 
@@ -15,8 +15,8 @@ interface GroupsListProps {
 }
 
 export const GroupsList = ({ 
-  selectedGroups, 
-  availableGroups, 
+  selectedGroups = [], // Provide default empty array if undefined
+  availableGroups = [], // Provide default empty array if undefined
   onRemoveGroup, 
   onUpdateRequired,
   onUpdateMinMax,

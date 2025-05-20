@@ -23,16 +23,19 @@ function ItemList<T extends Item>({
   onClick,
   selectedId
 }: ItemListProps<T>) {
+  // Ensure items is always an array, even if undefined is passed
+  const safeItems = items || [];
+  
   return (
     <>
-      {items.map((item, index) => (
+      {safeItems.map((item, index) => (
         <ReorderItem 
           key={item.id}
           id={item.id}
           name={item.name}
           isActive={item.isActive !== false}
           isFirst={index === 0}
-          isLast={index === items.length - 1}
+          isLast={index === safeItems.length - 1}
           onClick={onClick}
           onMoveUp={onMoveUp}
           onMoveDown={onMoveDown}
