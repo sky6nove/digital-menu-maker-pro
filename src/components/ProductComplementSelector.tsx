@@ -32,23 +32,32 @@ const ProductComplementSelector: React.FC<ProductComplementSelectorProps> = ({
   useEffect(() => {
     // Initialize selected complements for required groups with minimum items
     const initialSelections: { [groupId: number]: ComplementItem[] } = {};
-    complementGroups.forEach(({ group, complements, isRequired }) => {
-      if (isRequired && group.minimumQuantity && group.minimumQuantity > 0) {
-        // Pre-select the first N complements if the group is required
-        initialSelections[group.id] = complements.slice(0, group.minimumQuantity).map(c => ({
-          ...c,
-          quantity: 1
-        }));
-      } else {
-        initialSelections[group.id] = [];
-      }
-    });
+    
+    // Ensure complementGroups is defined before mapping over it
+    if (complementGroups && complementGroups.length > 0) {
+      complementGroups.forEach(({ group, complements, isRequired }) => {
+        if (isRequired && group.minimumQuantity && group.minimumQuantity > 0) {
+          // Pre-select the first N complements if the group is required
+          initialSelections[group.id] = complements.slice(0, group.minimumQuantity).map(c => ({
+            ...c,
+            quantity: 1
+          }));
+        } else {
+          initialSelections[group.id] = [];
+        }
+      });
+    }
+    
     setSelectedComplements(initialSelections);
   }, [complementGroups]);
 
   const handleComplementSelect = (groupId: number, complement: ComplementItem, quantity: number = 1) => {
     setSelectedComplements(prev => {
-      const group = complementGroups.find(g => g.group.id === groupId)?.group;
+      // Find the group information
+      const groupInfo = complementGroups.find(g => g.group.id === groupId);
+      if (!groupInfo) return prev;
+      
+      const group = groupInfo.group;
       const currentItems = prev[groupId] || [];
       
       // Check if the complement is already selected
@@ -114,6 +123,15 @@ const ProductComplementSelector: React.FC<ProductComplementSelectorProps> = ({
     return price.toFixed(2).replace(".", ",");
   };
 
+  // Handle case when complementGroups is undefined or empty
+  if (!complementGroups || complementGroups.length === 0) {
+    return (
+      <div className="space-y-4 mt-4">
+        <p className="text-center text-gray-500">Nenhum grupo de complementos disponível</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 mt-4">
       <Accordion type="single" collapsible className="w-full">
@@ -155,88 +173,95 @@ const ProductComplementSelector: React.FC<ProductComplementSelectorProps> = ({
             
             <AccordionContent className="px-2">
               <div className="space-y-3">
-                {complements.map((complement) => {
-                  const isSelected = Boolean(
-                    selectedComplements[group.id]?.find(
-                      (item) => item.id === complement.id
-                    )
-                  );
-                  
-                  const currentQuantity = selectedComplements[group.id]?.find(
-                    (item) => item.id === complement.id
-                  )?.quantity || 0;
-                  
-                  if (group.groupType === 'ingredients' || group.groupType === 'specifications') {
-                    // Use checkboxes for ingredients and specifications
-                    return (
-                      <div key={complement.id} className="flex items-center justify-between py-1">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id={`complement-${group.id}-${complement.id}`}
-                            checked={isSelected}
-                            onCheckedChange={(checked) => {
-                              handleComplementSelect(
-                                group.id,
-                                complement,
-                                checked ? 1 : -1
-                              );
-                            }}
-                          />
-                          <label
-                            htmlFor={`complement-${group.id}-${complement.id}`}
-                            className="text-sm cursor-pointer"
-                          >
-                            {complement.name}
-                          </label>
-                        </div>
-                        
-                        {complement.price > 0 && (
-                          <span className="text-sm text-menu-accent">
-                            + R$ {formatPrice(complement.price)}
-                          </span>
-                        )}
-                      </div>
+                {/* Ensure complements is defined before mapping */}
+                {complements && complements.length > 0 ? (
+                  complements.map((complement) => {
+                    const isSelected = Boolean(
+                      selectedComplements[group.id]?.find(
+                        (item) => item.id === complement.id
+                      )
                     );
-                  } else {
-                    // Use quantity inputs for cross_sell and disposables
-                    return (
-                      <div key={complement.id} className="flex items-center justify-between py-1">
-                        <div className="flex flex-1">
-                          <span className="text-sm">{complement.name}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
+                    
+                    const currentQuantity = selectedComplements[group.id]?.find(
+                      (item) => item.id === complement.id
+                    )?.quantity || 0;
+                    
+                    if (group.groupType === 'ingredients' || group.groupType === 'specifications') {
+                      // Use checkboxes for ingredients and specifications
+                      return (
+                        <div key={complement.id} className="flex items-center justify-between py-1">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`complement-${group.id}-${complement.id}`}
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                handleComplementSelect(
+                                  group.id,
+                                  complement,
+                                  checked ? 1 : -1
+                                );
+                              }}
+                            />
+                            <label
+                              htmlFor={`complement-${group.id}-${complement.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {complement.name}
+                            </label>
+                          </div>
+                          
                           {complement.price > 0 && (
-                            <span className="text-sm text-menu-accent mr-2">
-                              R$ {formatPrice(complement.price)}
+                            <span className="text-sm text-menu-accent">
+                              + R$ {formatPrice(complement.price)}
                             </span>
                           )}
-                          
-                          <button
-                            type="button"
-                            className="rounded-full w-6 h-6 flex items-center justify-center border border-gray-300 text-gray-500 disabled:opacity-50"
-                            onClick={() => handleComplementSelect(group.id, complement, -1)}
-                            disabled={!isSelected}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </button>
-                          
-                          <span className="w-8 text-center text-sm">
-                            {currentQuantity}
-                          </span>
-                          
-                          <button
-                            type="button"
-                            className="rounded-full w-6 h-6 flex items-center justify-center border border-menu-accent text-menu-accent"
-                            onClick={() => handleComplementSelect(group.id, complement, 1)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
                         </div>
-                      </div>
-                    );
-                  }
-                })}
+                      );
+                    } else {
+                      // Use quantity inputs for cross_sell and disposables
+                      return (
+                        <div key={complement.id} className="flex items-center justify-between py-1">
+                          <div className="flex flex-1">
+                            <span className="text-sm">{complement.name}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            {complement.price > 0 && (
+                              <span className="text-sm text-menu-accent mr-2">
+                                R$ {formatPrice(complement.price)}
+                              </span>
+                            )}
+                            
+                            <button
+                              type="button"
+                              className="rounded-full w-6 h-6 flex items-center justify-center border border-gray-300 text-gray-500 disabled:opacity-50"
+                              onClick={() => handleComplementSelect(group.id, complement, -1)}
+                              disabled={!isSelected}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            
+                            <span className="w-8 text-center text-sm">
+                              {currentQuantity}
+                            </span>
+                            
+                            <button
+                              type="button"
+                              className="rounded-full w-6 h-6 flex items-center justify-center border border-menu-accent text-menu-accent"
+                              onClick={() => handleComplementSelect(group.id, complement, 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })
+                ) : (
+                  <div className="py-4 text-center text-gray-500">
+                    Nenhum complemento disponível neste grupo
+                  </div>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>
