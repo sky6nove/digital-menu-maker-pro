@@ -36,9 +36,10 @@ const ProductComplementSelector: React.FC<ProductComplementSelectorProps> = ({
     // Ensure complementGroups is defined before mapping over it
     if (complementGroups && complementGroups.length > 0) {
       complementGroups.forEach(({ group, complements, isRequired }) => {
-        if (isRequired && group.minimumQuantity && group.minimumQuantity > 0) {
-          // Pre-select the first N complements if the group is required
-          initialSelections[group.id] = complements.slice(0, group.minimumQuantity).map(c => ({
+        if (isRequired && group.minimumQuantity && group.minimumQuantity > 0 && complements && complements.length > 0) {
+          // Pre-select the first N complements if the group is required, ensuring complements exists and has enough items
+          const itemsToSelect = Math.min(group.minimumQuantity, complements.length);
+          initialSelections[group.id] = complements.slice(0, itemsToSelect).map(c => ({
             ...c,
             quantity: 1
           }));
@@ -54,7 +55,7 @@ const ProductComplementSelector: React.FC<ProductComplementSelectorProps> = ({
   const handleComplementSelect = (groupId: number, complement: ComplementItem, quantity: number = 1) => {
     setSelectedComplements(prev => {
       // Find the group information
-      const groupInfo = complementGroups.find(g => g.group.id === groupId);
+      const groupInfo = complementGroups?.find(g => g.group.id === groupId);
       if (!groupInfo) return prev;
       
       const group = groupInfo.group;
@@ -173,7 +174,7 @@ const ProductComplementSelector: React.FC<ProductComplementSelectorProps> = ({
             
             <AccordionContent className="px-2">
               <div className="space-y-3">
-                {/* Ensure complements is defined before mapping */}
+                {/* Ensure complements is defined and not empty before mapping */}
                 {complements && complements.length > 0 ? (
                   complements.map((complement) => {
                     const isSelected = Boolean(
