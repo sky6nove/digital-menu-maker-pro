@@ -17,7 +17,9 @@ export const useReorderComplements = (
       if (activeGroup) {
         setLoadingComplements(true);
         try {
+          console.log("Fetching complements for group:", activeGroup);
           const complements = await fetchComplementsByGroup(activeGroup);
+          console.log("Fetched complements:", complements);
           setGroupComplements(complements || []);
         } catch (error) {
           console.error("Error loading complements:", error);
@@ -39,7 +41,10 @@ export const useReorderComplements = (
     if (!activeGroup || !groupComplements || groupComplements.length === 0) return;
     
     const currentIndex = groupComplements.findIndex(c => c.id === id);
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {
+      console.error("Complement not found:", id);
+      return;
+    }
     
     if (
       (direction === 'up' && currentIndex <= 0) || 
@@ -56,6 +61,13 @@ export const useReorderComplements = (
       // Get the current order values or use indices as fallback
       const currentOrder = groupComplements[currentIndex].order ?? currentIndex;
       const targetOrder = targetComplement.order ?? targetIndex;
+      
+      console.log("Reordering complement:", {
+        current: groupComplements[currentIndex],
+        target: targetComplement,
+        currentOrder,
+        targetOrder
+      });
       
       // Determine which table to update based on the complement type
       // Check if the specific complement ID exists
@@ -108,7 +120,13 @@ export const useReorderComplements = (
         }
       }
       
-      // Reload complements to reflect the updated order
+      // Update local state for immediate feedback
+      const updatedComplements = [...groupComplements];
+      [updatedComplements[currentIndex], updatedComplements[targetIndex]] = 
+        [updatedComplements[targetIndex], updatedComplements[currentIndex]];
+      setGroupComplements(updatedComplements);
+      
+      // Then reload from database to ensure consistency
       const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
       setGroupComplements(updatedComplementsData || []);
       

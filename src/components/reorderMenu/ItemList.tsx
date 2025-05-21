@@ -28,20 +28,32 @@ function ItemList<T extends Item>({
   
   return (
     <>
-      {safeItems.map((item, index) => (
-        <ReorderItem 
-          key={item.id}
-          id={item.id}
-          name={item.name}
-          isActive={item.isActive !== false}
-          isFirst={index === 0}
-          isLast={index === safeItems.length - 1}
-          onClick={onClick}
-          onMoveUp={onMoveUp}
-          onMoveDown={onMoveDown}
-          isSelected={selectedId === item.id}
-        />
-      ))}
+      {safeItems.length === 0 ? (
+        <div className="p-4 text-center text-muted-foreground">
+          Nenhum item encontrado.
+        </div>
+      ) : (
+        safeItems.map((item, index) => (
+          <ReorderItem 
+            key={item.id}
+            id={item.id}
+            name={item.name}
+            isActive={item.isActive !== false}
+            isFirst={index === 0}
+            isLast={index === safeItems.length - 1}
+            onClick={onClick}
+            onMoveUp={(id) => {
+              console.log("ItemList: Moving up item", id);
+              onMoveUp(id);
+            }}
+            onMoveDown={(id) => {
+              console.log("ItemList: Moving down item", id);
+              onMoveDown(id);
+            }}
+            isSelected={selectedId === item.id}
+          />
+        ))
+      )}
     </>
   );
 }

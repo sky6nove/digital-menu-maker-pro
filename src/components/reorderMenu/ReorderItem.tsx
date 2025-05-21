@@ -27,10 +27,28 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
   onMoveDown,
   isSelected = false
 }) => {
+  const handleItemClick = () => {
+    if (onClick) {
+      onClick(id);
+    }
+  };
+
+  const handleMoveUp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log("ReorderItem: Moving up item", id);
+    onMoveUp(id);
+  };
+
+  const handleMoveDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log("ReorderItem: Moving down item", id);
+    onMoveDown(id);
+  };
+
   return (
     <TableRow 
       className={`${onClick ? 'cursor-pointer' : ''} ${isSelected ? 'bg-muted' : ''}`}
-      onClick={() => onClick && onClick(id)}
+      onClick={handleItemClick}
     >
       <TableCell className="py-2">
         <div className="flex items-center gap-2">
@@ -44,10 +62,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onMoveUp(id);
-            }}
+            onClick={handleMoveUp}
             disabled={isFirst}
             className="h-7 w-7"
           >
@@ -57,10 +72,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onMoveDown(id);
-            }}
+            onClick={handleMoveDown}
             disabled={isLast}
             className="h-7 w-7"
           >

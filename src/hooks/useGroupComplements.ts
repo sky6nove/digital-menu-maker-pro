@@ -8,10 +8,14 @@ export const useGroupComplements = () => {
   const [groupComplements, setGroupComplements] = useState<any[]>([]);
 
   const fetchComplementsByGroup = async (groupId: number) => {
-    if (!groupId) return [];
+    if (!groupId) {
+      console.error("No group ID provided");
+      return [];
+    }
     
     try {
       setLoading(true);
+      console.log("Fetching complements for group ID:", groupId);
       
       // First try to fetch product-specific complements
       const { data: specificComplements, error: specificError } = await supabase
@@ -32,6 +36,8 @@ export const useGroupComplements = () => {
         throw specificError;
       }
       
+      console.log("Specific complements data:", specificComplements);
+      
       // If specific complements found, format and return them
       if (specificComplements && specificComplements.length > 0) {
         // Format the specific complements data for the component
@@ -45,6 +51,7 @@ export const useGroupComplements = () => {
           order: item.order || 0
         }));
         
+        console.log("Formatted specific complements:", complements);
         setGroupComplements(complements);
         return complements;
       }
@@ -67,6 +74,8 @@ export const useGroupComplements = () => {
         throw itemsError;
       }
       
+      console.log("Complement items data:", complementItems);
+      
       // Format the items data for the component
       const formattedItems = (complementItems || []).map(item => ({
         id: item.id,
@@ -77,6 +86,7 @@ export const useGroupComplements = () => {
         order: item.order || 0
       }));
       
+      console.log("Formatted complement items:", formattedItems);
       setGroupComplements(formattedItems);
       return formattedItems;
     } catch (error: any) {

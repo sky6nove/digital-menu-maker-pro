@@ -42,6 +42,13 @@ export const useReorderProducts = (
       const currentDisplayOrder = filteredProducts[currentIndex].display_order ?? currentIndex;
       const targetDisplayOrder = targetProduct.display_order ?? targetIndex;
       
+      console.log("Reordering product:", {
+        currentId: id,
+        targetId: targetProduct.id,
+        currentDisplayOrder,
+        targetDisplayOrder
+      });
+      
       // Swap display_order values
       const { error: updateError } = await supabase
         .from("products")
@@ -57,13 +64,14 @@ export const useReorderProducts = (
         
       if (updateTargetError) throw updateTargetError;
       
-      await loadProducts(); // Reload products
-      
-      // Update the local filtered products list
+      // Update the local filtered products list for immediate feedback
       const updatedFilteredProducts = [...filteredProducts];
       [updatedFilteredProducts[currentIndex], updatedFilteredProducts[targetIndex]] = 
         [updatedFilteredProducts[targetIndex], updatedFilteredProducts[currentIndex]];
       setFilteredProducts(updatedFilteredProducts);
+      
+      // Then reload from database to ensure consistency
+      await loadProducts();
       
       toast.success("Ordem atualizada");
     } catch (error) {

@@ -54,6 +54,13 @@ export const useReorderGroups = (
       const currentOrder = productGroups[currentIndex].order ?? currentIndex;
       const targetOrder = targetGroup.order ?? targetIndex;
       
+      console.log("Reordering group:", {
+        productGroupId: productGroups[currentIndex].productGroupId,
+        targetGroupId: targetGroup.productGroupId,
+        currentOrder,
+        targetOrder
+      });
+      
       // Update first group's order - using productGroupId which is the ID from product_complement_groups table
       const { error: updateError } = await supabase
         .from("product_complement_groups")
@@ -76,7 +83,13 @@ export const useReorderGroups = (
         throw updateTargetError;
       }
       
-      // Reload product groups to reflect the updated order
+      // Update local state first to provide immediate feedback
+      const updatedGroups = [...productGroups];
+      [updatedGroups[currentIndex], updatedGroups[targetIndex]] = 
+        [updatedGroups[targetIndex], updatedGroups[currentIndex]];
+      setProductGroups(updatedGroups);
+      
+      // Then reload from database to ensure consistency
       const updatedGroupsData = await fetchComplementGroupsByProduct(activeProduct);
       setProductGroups(updatedGroupsData || []);
       

@@ -11,10 +11,14 @@ export const useProductComplementGroups = () => {
   const [productComplementGroups, setProductComplementGroups] = useState<any[]>([]);
 
   const fetchComplementGroupsByProduct = async (productId: number) => {
-    if (!productId) return [];
+    if (!productId) {
+      console.error("No product ID provided");
+      return [];
+    }
     
     try {
       setLoading(true);
+      console.log("Fetching complement groups for product ID:", productId);
       
       const { data, error } = await supabase
         .from("product_complement_groups")
@@ -27,7 +31,12 @@ export const useProductComplementGroups = () => {
         .eq("product_id", productId)
         .order('order');
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching product complement groups:", error);
+        throw error;
+      }
+      
+      console.log("Product complement groups data:", data);
       
       // Format the data for easier use in the components
       const formattedGroups = data ? data.map(item => ({
@@ -35,9 +44,10 @@ export const useProductComplementGroups = () => {
         productGroupId: item.id, // This is the product_complement_groups junction table ID
         name: item.complement_groups?.name || 'Unnamed Group',
         isActive: item.complement_groups?.is_active !== false,
-        order: item.order
+        order: item.order || 0
       })) : [];
       
+      console.log("Formatted product complement groups:", formattedGroups);
       setProductComplementGroups(formattedGroups);
       return formattedGroups;
     } catch (error: any) {

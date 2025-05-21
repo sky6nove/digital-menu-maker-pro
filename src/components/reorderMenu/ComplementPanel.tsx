@@ -43,8 +43,14 @@ const ComplementPanel: React.FC<ComplementPanelProps> = ({
       ) : activeGroup && safeComplements.length > 0 ? (
         <ItemList
           items={safeComplements}
-          onMoveUp={(id) => handleComplementMove(id, 'up')}
-          onMoveDown={(id) => handleComplementMove(id, 'down')}
+          onMoveUp={(id) => {
+            console.log("Moving complement up:", id);
+            handleComplementMove(id, 'up');
+          }}
+          onMoveDown={(id) => {
+            console.log("Moving complement down:", id);
+            handleComplementMove(id, 'down');
+          }}
         />
       ) : activeGroup ? (
         <div className="p-4 text-center text-muted-foreground">
