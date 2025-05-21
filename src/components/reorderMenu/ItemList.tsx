@@ -42,13 +42,13 @@ function ItemList<T extends Item>({
             isFirst={index === 0}
             isLast={index === safeItems.length - 1}
             onClick={onClick}
-            onMoveUp={(id) => {
-              console.log("ItemList: Moving up item", id);
-              onMoveUp(id);
+            onMoveUp={() => {
+              console.log("ItemList: Moving up item", item.id);
+              onMoveUp(item.id);
             }}
-            onMoveDown={(id) => {
-              console.log("ItemList: Moving down item", id);
-              onMoveDown(id);
+            onMoveDown={() => {
+              console.log("ItemList: Moving down item", item.id);
+              onMoveDown(item.id);
             }}
             isSelected={selectedId === item.id}
           />

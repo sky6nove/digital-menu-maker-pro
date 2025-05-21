@@ -33,18 +33,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
     }
   };
 
-  const handleMoveUp = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log("ReorderItem: Moving up item", id);
-    onMoveUp(id);
-  };
-
-  const handleMoveDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log("ReorderItem: Moving down item", id);
-    onMoveDown(id);
-  };
-
   return (
     <TableRow 
       className={`${onClick ? 'cursor-pointer' : ''} ${isSelected ? 'bg-muted' : ''}`}
@@ -62,7 +50,11 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={handleMoveUp}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log("Moving up item", id);
+              onMoveUp();
+            }}
             disabled={isFirst}
             className="h-7 w-7"
           >
@@ -72,7 +64,11 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={handleMoveDown}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log("Moving down item", id);
+              onMoveDown();
+            }}
             disabled={isLast}
             className="h-7 w-7"
           >

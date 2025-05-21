@@ -16,7 +16,9 @@ export const useReorderProducts = (
   // Update filtered products when activeCategory changes
   useEffect(() => {
     if (activeCategory) {
-      setFilteredProducts(products.filter(p => p.categoryId === activeCategory));
+      const filtered = products.filter(p => p.categoryId === activeCategory);
+      console.log("Filtered products for category", activeCategory, ":", filtered);
+      setFilteredProducts(filtered);
       setActiveProduct(null); // Reset product selection
     } else {
       setFilteredProducts([]);
@@ -25,7 +27,17 @@ export const useReorderProducts = (
 
   // Handle reordering for products
   const handleProductMove = async (id: number, direction: 'up' | 'down') => {
+    if (!filteredProducts || filteredProducts.length === 0) {
+      console.error("No filtered products available to reorder");
+      return;
+    }
+    
     const currentIndex = filteredProducts.findIndex(p => p.id === id);
+    if (currentIndex === -1) {
+      console.error("Product not found:", id);
+      return;
+    }
+    
     if (
       (direction === 'up' && currentIndex <= 0) || 
       (direction === 'down' && currentIndex >= filteredProducts.length - 1)
@@ -55,14 +67,20 @@ export const useReorderProducts = (
         .update({ display_order: targetDisplayOrder })
         .eq("id", id);
         
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Error updating first product:", updateError);
+        throw updateError;
+      }
       
       const { error: updateTargetError } = await supabase
         .from("products")
         .update({ display_order: currentDisplayOrder })
         .eq("id", targetProduct.id);
         
-      if (updateTargetError) throw updateTargetError;
+      if (updateTargetError) {
+        console.error("Error updating second product:", updateTargetError);
+        throw updateTargetError;
+      }
       
       // Update the local filtered products list for immediate feedback
       const updatedFilteredProducts = [...filteredProducts];

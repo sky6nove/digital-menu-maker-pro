@@ -38,7 +38,10 @@ export const useReorderComplements = (
 
   // Handle reordering for complements
   const handleComplementMove = async (id: number, direction: 'up' | 'down') => {
-    if (!activeGroup || !groupComplements || groupComplements.length === 0) return;
+    if (!activeGroup || !groupComplements || groupComplements.length === 0) {
+      console.error("No complements available to reorder");
+      return;
+    }
     
     const currentIndex = groupComplements.findIndex(c => c.id === id);
     if (currentIndex === -1) {
@@ -73,6 +76,14 @@ export const useReorderComplements = (
       // Check if the specific complement ID exists
       const isSpecificComplement = 'specificId' in groupComplements[currentIndex] && 
                                   groupComplements[currentIndex].specificId;
+      
+      const isSpecificTargetComplement = 'specificId' in targetComplement && 
+                                       targetComplement.specificId;
+                                       
+      if (isSpecificComplement !== isSpecificTargetComplement) {
+        console.error("Mixed complement types, cannot reorder");
+        throw new Error("Mixed complement types, cannot reorder");
+      }
       
       if (isSpecificComplement) {
         // Update first complement's order

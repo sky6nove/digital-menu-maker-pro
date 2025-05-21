@@ -26,7 +26,16 @@ export const useProductComplementGroups = () => {
           id,
           complement_group_id,
           "order",
-          complement_groups:complement_group_id(*)
+          is_required,
+          complement_groups:complement_group_id(
+            id, 
+            name, 
+            is_active, 
+            group_type, 
+            minimum_quantity, 
+            maximum_quantity, 
+            is_required
+          )
         `)
         .eq("product_id", productId)
         .order('order');
@@ -44,7 +53,11 @@ export const useProductComplementGroups = () => {
         productGroupId: item.id, // This is the product_complement_groups junction table ID
         name: item.complement_groups?.name || 'Unnamed Group',
         isActive: item.complement_groups?.is_active !== false,
-        order: item.order || 0
+        order: item.order || 0,
+        isRequired: item.is_required,
+        groupType: item.complement_groups?.group_type,
+        minimumQuantity: item.complement_groups?.minimum_quantity,
+        maximumQuantity: item.complement_groups?.maximum_quantity
       })) : [];
       
       console.log("Formatted product complement groups:", formattedGroups);
