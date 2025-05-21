@@ -31,10 +31,10 @@ export const useProductComplementGroups = () => {
       
       // Format the data for easier use in the components
       const formattedGroups = data ? data.map(item => ({
-        id: item.complement_group_id,
-        productGroupId: item.id,
+        id: item.complement_group_id, // This is the actual complement group ID
+        productGroupId: item.id, // This is the product_complement_groups junction table ID
         name: item.complement_groups?.name || 'Unnamed Group',
-        isActive: item.complement_groups?.is_active || false,
+        isActive: item.complement_groups?.is_active !== false,
         order: item.order
       })) : [];
       

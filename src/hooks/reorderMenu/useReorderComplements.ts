@@ -19,12 +19,8 @@ export const useReorderComplements = (
         try {
           const complements = await fetchComplementsByGroup(activeGroup);
           setGroupComplements(complements || []);
-          
-          if (complements.length === 0) {
-            console.log("No complements found for group", activeGroup);
-          }
         } catch (error) {
-          console.error("Error loading complementes:", error);
+          console.error("Error loading complements:", error);
           toast.error("Erro ao carregar complementos");
           setGroupComplements([]);
         } finally {
@@ -62,17 +58,11 @@ export const useReorderComplements = (
       const targetOrder = targetComplement.order ?? targetIndex;
       
       // Determine which table to update based on the complement type
+      // Check if the specific complement ID exists
       const isSpecificComplement = 'specificId' in groupComplements[currentIndex] && 
                                   groupComplements[currentIndex].specificId;
       
       if (isSpecificComplement) {
-        console.log("Updating product_specific_complements order", {
-          currentId: groupComplements[currentIndex].specificId,
-          targetId: targetComplement.specificId,
-          currentOrder,
-          targetOrder
-        });
-        
         // Update first complement's order
         const { error: updateError } = await supabase
           .from("product_specific_complements")
@@ -95,20 +85,11 @@ export const useReorderComplements = (
           throw updateTargetError;
         }
       } else {
-        console.log("Updating complement_items order", {
-          currentId: groupComplements[currentIndex].id,
-          targetId: targetComplement.id,
-          currentOrder,
-          targetOrder,
-          groupId: activeGroup
-        });
-        
-        // Update first complement's order
+        // Update first complement's order in complement_items table
         const { error: updateError } = await supabase
           .from("complement_items")
           .update({ order: targetOrder })
-          .eq("id", groupComplements[currentIndex].id)
-          .eq("group_id", activeGroup);
+          .eq("id", groupComplements[currentIndex].id);
           
         if (updateError) {
           console.error("Error updating first complement item:", updateError);
@@ -119,8 +100,7 @@ export const useReorderComplements = (
         const { error: updateTargetError } = await supabase
           .from("complement_items")
           .update({ order: currentOrder })
-          .eq("id", targetComplement.id)
-          .eq("group_id", activeGroup);
+          .eq("id", targetComplement.id);
           
         if (updateTargetError) {
           console.error("Error updating second complement item:", updateTargetError);

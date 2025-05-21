@@ -54,14 +54,7 @@ export const useReorderGroups = (
       const currentOrder = productGroups[currentIndex].order ?? currentIndex;
       const targetOrder = targetGroup.order ?? targetIndex;
       
-      console.log("Updating group orders:", {
-        currentId: productGroups[currentIndex].productGroupId,
-        targetId: targetGroup.productGroupId,
-        currentOrder,
-        targetOrder
-      });
-      
-      // Update first group's order
+      // Update first group's order - using productGroupId which is the ID from product_complement_groups table
       const { error: updateError } = await supabase
         .from("product_complement_groups")
         .update({ order: targetOrder })
@@ -108,6 +101,3 @@ export const useReorderGroups = (
     handleGroupSelect
   };
 };
-
-// Export the named function for direct importing
-export { useReorderGroups as default };
