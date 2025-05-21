@@ -42,7 +42,7 @@ export const useGroupComplements = () => {
           groupId: groupId,
           isActive: item.is_active !== false,
           price: item.custom_price || item.complements?.price || 0,
-          order: item.order
+          order: item.order || 0
         }));
         
         setGroupComplements(complements);
@@ -74,7 +74,7 @@ export const useGroupComplements = () => {
         groupId: groupId,
         isActive: item.is_active !== false,
         price: item.price || 0,
-        order: item.order
+        order: item.order || 0
       }));
       
       setGroupComplements(formattedItems);

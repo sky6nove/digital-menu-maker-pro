@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProducts } from "../useProducts";
@@ -16,6 +16,7 @@ export const useReorderMenu = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   
   // Import hooks
   const { products, loadProducts } = useProducts(user?.id);
@@ -51,28 +52,30 @@ export const useReorderMenu = () => {
     handleComplementMove 
   } = useReorderComplements(activeGroup, fetchComplementsByGroup);
 
-  // Load all data
-  useEffect(() => {
-    if (user) {
-      const fetchData = async () => {
-        setLoading(true);
-        try {
-          await Promise.all([
-            loadCategories(),
-            loadProducts(),
-            loadComplementGroups()
-          ]);
-        } catch (error) {
-          toast.error("Erro ao carregar dados");
-          console.error("Error loading data:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchData();
+  // Load all data - using useCallback to prevent infinite loops
+  const loadAllData = useCallback(async () => {
+    if (!user || dataLoaded) return;
+    
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadCategories(),
+        loadProducts(),
+        loadComplementGroups()
+      ]);
+      setDataLoaded(true);
+    } catch (error) {
+      toast.error("Erro ao carregar dados");
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
     }
-  }, [user, loadCategories, loadProducts, loadComplementGroups]);
+  }, [user, loadCategories, loadProducts, loadComplementGroups, dataLoaded]);
+
+  // Load data on component mount
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
 
   // Handle save & close actions
   const handleSave = async () => {
@@ -93,15 +96,15 @@ export const useReorderMenu = () => {
 
   // Get display names for active items
   const activeCategoryName = activeCategory 
-    ? categories.find(c => c.id === activeCategory)?.name 
+    ? categories.find(c => c.id === activeCategory)?.name || ''
     : '';
 
   const activeProductName = activeProduct
-    ? products.find(p => p.id === activeProduct)?.name
+    ? products.find(p => p.id === activeProduct)?.name || ''
     : '';
 
   const activeGroupName = activeGroup 
-    ? productGroups.find(g => g.id === activeGroup)?.name 
+    ? productGroups.find(g => g.id === activeGroup)?.name || ''
     : '';
 
   return {
