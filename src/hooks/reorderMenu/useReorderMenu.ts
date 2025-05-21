@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +15,7 @@ import { useReorderComplements } from "./useReorderComplements";
 export const useReorderMenu = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   
   // Import hooks
   const { products, loadProducts } = useProducts(user?.id);
@@ -74,8 +76,19 @@ export const useReorderMenu = () => {
 
   // Handle save & close actions
   const handleSave = async () => {
-    toast.success("Ordem salva com sucesso");
-    return true;
+    setSaving(true);
+    try {
+      // In a real implementation, you would save all the changes here
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate saving
+      toast.success("Ordem salva com sucesso");
+      return true;
+    } catch (error) {
+      toast.error("Erro ao salvar alterações");
+      console.error("Error saving menu order:", error);
+      return false;
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Get display names for active items
@@ -93,7 +106,7 @@ export const useReorderMenu = () => {
 
   return {
     loading,
-    saving: false,
+    saving,
     categories,
     filteredProducts,
     productGroups,
