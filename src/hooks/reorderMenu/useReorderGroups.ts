@@ -10,28 +10,37 @@ export const useReorderGroups = (
   const [productGroups, setProductGroups] = useState<any[]>([]);
   const [activeGroup, setActiveGroup] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Load product complement groups when a product is selected
   useEffect(() => {
     const loadProductGroups = async () => {
       if (activeProduct) {
         try {
+          setLoading(true);
           console.log("Loading complement groups for product:", activeProduct);
           const groups = await fetchComplementGroupsByProduct(activeProduct);
           console.log("Loaded complement groups:", groups);
           
-          // Sort by order if available
+          // Sort by order if available, otherwise by id
           const sortedGroups = [...groups].sort((a, b) => {
+            // If both have valid order, use that
             if (a.order !== null && b.order !== null) {
               return a.order - b.order;
             }
-            return 0;
+            // If only one has order, put the one with a value first
+            if (a.order !== null) return -1;
+            if (b.order !== null) return 1;
+            // Fallback to sorting by id
+            return a.id - b.id;
           });
           
           setProductGroups(sortedGroups || []);
         } catch (error) {
           console.error("Error loading product groups:", error);
           setProductGroups([]);
+        } finally {
+          setLoading(false);
         }
       } else {
         setProductGroups([]);
@@ -65,16 +74,17 @@ export const useReorderGroups = (
     try {
       setSaving(true);
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      const currentGroup = productGroups[currentIndex];
       const targetGroup = productGroups[targetIndex];
       
       // Get the current order values or use indices as fallback
-      const currentOrder = productGroups[currentIndex].order ?? currentIndex;
+      const currentOrder = currentGroup.order ?? currentIndex;
       const targetOrder = targetGroup.order ?? targetIndex;
       
       console.log("Reordering group:", {
         currentGroupId: id,
         targetGroupId: targetGroup.id,
-        productGroupId: productGroups[currentIndex].productGroupId,
+        productGroupId: currentGroup.productGroupId,
         targetGroupProductId: targetGroup.productGroupId,
         currentOrder,
         targetOrder
@@ -87,7 +97,7 @@ export const useReorderGroups = (
       setProductGroups(updatedGroups);
       
       // Check if productGroupId exists before updating
-      if (!productGroups[currentIndex].productGroupId || !targetGroup.productGroupId) {
+      if (!currentGroup.productGroupId || !targetGroup.productGroupId) {
         console.error("Missing productGroupId for one or both groups");
         throw new Error("Missing productGroupId for groups");
       }
@@ -96,7 +106,7 @@ export const useReorderGroups = (
       const { error: updateError } = await supabase
         .from("product_complement_groups")
         .update({ order: targetOrder })
-        .eq("id", productGroups[currentIndex].productGroupId);
+        .eq("id", currentGroup.productGroupId);
         
       if (updateError) {
         console.error("Error updating first group:", updateError);
@@ -119,10 +129,15 @@ export const useReorderGroups = (
       
       // Sort the updated groups by order
       const sortedUpdatedGroups = [...updatedGroupsData].sort((a, b) => {
+        // If both have valid order, use that
         if (a.order !== null && b.order !== null) {
           return a.order - b.order;
         }
-        return 0;
+        // If only one has order, put the one with a value first
+        if (a.order !== null) return -1;
+        if (b.order !== null) return 1;
+        // Fallback to sorting by id
+        return a.id - b.id;
       });
       
       setProductGroups(sortedUpdatedGroups || []);
@@ -135,7 +150,17 @@ export const useReorderGroups = (
       // Revert optimistic update if there was an error
       if (activeProduct) {
         fetchComplementGroupsByProduct(activeProduct)
-          .then(groups => setProductGroups(groups || []))
+          .then(groups => {
+            const sortedGroups = [...groups].sort((a, b) => {
+              if (a.order !== null && b.order !== null) {
+                return a.order - b.order;
+              }
+              if (a.order !== null) return -1;
+              if (b.order !== null) return 1;
+              return a.id - b.id;
+            });
+            setProductGroups(sortedGroups || []);
+          })
           .catch(err => console.error("Error reverting optimistic update:", err));
       }
     } finally {
@@ -151,6 +176,7 @@ export const useReorderGroups = (
     productGroups,
     activeGroup,
     saving,
+    loading,
     handleGroupMove,
     handleGroupSelect
   };

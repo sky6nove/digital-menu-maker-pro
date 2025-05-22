@@ -37,7 +37,7 @@ export const useProductComplementGroups = () => {
           )
         `)
         .eq("product_id", productId)
-        .order('order');
+        .order('order', { ascending: true, nullsFirst: false });
         
       if (error) {
         console.error("Error fetching product complement groups:", error);
@@ -52,16 +52,26 @@ export const useProductComplementGroups = () => {
         productGroupId: item.id, // This is the product_complement_groups junction table ID
         name: item.complement_groups?.name || 'Unnamed Group',
         isActive: item.complement_groups?.is_active !== false,
-        order: item.order || 0,
+        order: item.order ?? 999999, // Use a high number as fallback for null
         isRequired: item.is_required,
         groupType: item.complement_groups?.group_type,
         minimumQuantity: item.complement_groups?.minimum_quantity,
         maximumQuantity: item.complement_groups?.maximum_quantity
       })) : [];
       
-      console.log("Formatted product complement groups:", formattedGroups);
-      setProductComplementGroups(formattedGroups);
-      return formattedGroups;
+      // Sort by order if available, otherwise by name
+      const sortedGroups = [...formattedGroups].sort((a, b) => {
+        if (a.order !== null && b.order !== null) {
+          return a.order - b.order;
+        }
+        if (a.order === null) return 1;
+        if (b.order === null) return -1;
+        return a.name.localeCompare(b.name);
+      });
+      
+      console.log("Formatted product complement groups:", sortedGroups);
+      setProductComplementGroups(sortedGroups);
+      return sortedGroups;
     } catch (error: any) {
       toast.error("Erro ao carregar grupos de complementos do produto");
       console.error("Error fetching product complement groups:", error);

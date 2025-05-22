@@ -9,6 +9,7 @@ interface ProductPanelProps {
   activeCategory: number | null;
   activeProduct: number | null;
   categoryName?: string;
+  loading?: boolean;
   handleProductSelect: (id: number) => void;
   handleProductMove: (id: number, direction: 'up' | 'down') => void;
 }
@@ -18,6 +19,7 @@ const ProductPanel: React.FC<ProductPanelProps> = ({
   activeCategory,
   activeProduct,
   categoryName,
+  loading = false,
   handleProductSelect,
   handleProductMove
 }) => {
@@ -26,14 +28,19 @@ const ProductPanel: React.FC<ProductPanelProps> = ({
       title={`Itens${categoryName ? ` - ${categoryName}` : ''}`}
       emptyMessage="Selecione uma categoria para visualizar seus itens"
     >
-      {activeCategory && (
+      {activeCategory ? (
         <ItemList
           items={products}
           onMoveUp={(id) => handleProductMove(id, 'up')}
           onMoveDown={(id) => handleProductMove(id, 'down')}
           onClick={handleProductSelect}
           selectedId={activeProduct}
+          loading={loading}
         />
+      ) : (
+        <div className="p-4 text-center text-muted-foreground">
+          Selecione uma categoria para visualizar seus itens
+        </div>
       )}
     </ReorderPanel>
   );

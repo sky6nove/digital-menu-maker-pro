@@ -31,29 +31,33 @@ export const useReorderCategories = (
       return; // Already at top/bottom
     }
     
+    // Create a copy of the categories array for optimistic UI update
+    const updatedCategories = [...categories];
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const targetCategory = updatedCategories[targetIndex];
+    
+    // Get the current order values, use index if order is null
+    const currentOrder = updatedCategories[currentIndex].order ?? currentIndex;
+    const targetOrder = targetCategory.order ?? targetIndex;
+    
+    console.log("Reordering category:", {
+      currentId: id,
+      targetId: targetCategory.id,
+      currentOrder,
+      targetOrder
+    });
+    
     try {
       setSaving(true);
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      const targetCategory = categories[targetIndex];
       
-      console.log("Reordering category:", {
-        currentId: id,
-        targetId: targetCategory.id,
-        currentOrder: categories[currentIndex].order,
-        targetOrder: targetCategory.order
-      });
-      
-      // Create a copy of the categories array for optimistic UI update
-      const updatedCategories = [...categories];
-      
-      // Swap positions in the UI immediately
+      // Swap positions in the UI immediately (optimistic update)
       [updatedCategories[currentIndex], updatedCategories[targetIndex]] = 
         [updatedCategories[targetIndex], updatedCategories[currentIndex]];
       
-      // Swap order values
+      // Update the first category's order
       const { error: updateError } = await supabase
         .from("categories")
-        .update({ order: targetCategory.order })
+        .update({ order: targetOrder })
         .eq("id", id);
         
       if (updateError) {
@@ -61,9 +65,10 @@ export const useReorderCategories = (
         throw updateError;
       }
       
+      // Update the second category's order
       const { error: updateTargetError } = await supabase
         .from("categories")
-        .update({ order: categories[currentIndex].order })
+        .update({ order: currentOrder })
         .eq("id", targetCategory.id);
         
       if (updateTargetError) {

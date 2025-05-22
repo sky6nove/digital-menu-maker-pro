@@ -3,7 +3,6 @@ import React from "react";
 import { toast } from "sonner";
 import ReorderPanel from "./ReorderPanel";
 import ItemList from "./ItemList";
-import { Table, TableBody } from "@/components/ui/table";
 
 interface Complement {
   id: number;
@@ -42,33 +41,18 @@ const ComplementPanel: React.FC<ComplementPanelProps> = ({
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-sm text-muted-foreground">Carregando complementos...</p>
         </div>
-      ) : activeGroup && safeComplements.length > 0 ? (
-        <Table>
-          <TableBody>
-            <ItemList
-              items={safeComplements}
-              onMoveUp={(id) => {
-                console.log("Moving complement up:", id);
-                handleComplementMove(id, 'up');
-              }}
-              onMoveDown={(id) => {
-                console.log("Moving complement down:", id);
-                handleComplementMove(id, 'down');
-              }}
-            />
-          </TableBody>
-        </Table>
       ) : activeGroup ? (
+        <ItemList
+          items={safeComplements}
+          onMoveUp={(id) => handleComplementMove(id, 'up')}
+          onMoveDown={(id) => handleComplementMove(id, 'down')}
+          loading={loading}
+        />
+      ) : (
         <div className="p-4 text-center text-muted-foreground">
-          Nenhum complemento encontrado neste grupo.
-          <button 
-            className="ml-1 text-primary underline hover:text-primary/80"
-            onClick={() => toast.info("Você pode adicionar complementos ao grupo na seção de Grupos de Complementos")}
-          >
-            Saiba mais
-          </button>
+          Selecione um grupo para visualizar seus complementos
         </div>
-      ) : null}
+      )}
     </ReorderPanel>
   );
 };

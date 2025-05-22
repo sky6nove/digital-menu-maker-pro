@@ -21,12 +21,14 @@ export const useReorderComplements = (
           const complements = await fetchComplementsByGroup(activeGroup);
           console.log("Fetched complements:", complements);
           
-          // Sort by order if available
+          // Sort by order if available, then by name
           const sortedComplements = [...complements].sort((a, b) => {
             if (a.order !== null && b.order !== null) {
               return a.order - b.order;
             }
-            return 0;
+            if (a.order === null) return 1;
+            if (b.order === null) return -1;
+            return a.name.localeCompare(b.name);
           });
           
           setGroupComplements(sortedComplements || []);
@@ -39,6 +41,7 @@ export const useReorderComplements = (
         }
       } else {
         setGroupComplements([]);
+        setLoadingComplements(false);
       }
     };
 
@@ -68,14 +71,15 @@ export const useReorderComplements = (
     try {
       setSaving(true);
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      const currentComplement = groupComplements[currentIndex];
       const targetComplement = groupComplements[targetIndex];
       
       // Get the current order values or use indices as fallback
-      const currentOrder = groupComplements[currentIndex].order ?? currentIndex;
+      const currentOrder = currentComplement.order ?? currentIndex;
       const targetOrder = targetComplement.order ?? targetIndex;
       
       console.log("Reordering complement:", {
-        current: groupComplements[currentIndex],
+        current: currentComplement,
         target: targetComplement,
         currentOrder,
         targetOrder
@@ -89,8 +93,8 @@ export const useReorderComplements = (
       
       // Determine which table to update based on the complement type
       // Check if the specific complement ID exists
-      const isSpecificComplement = 'specificId' in groupComplements[currentIndex] && 
-                                  groupComplements[currentIndex].specificId;
+      const isSpecificComplement = 'specificId' in currentComplement && 
+                                  currentComplement.specificId;
       
       const isSpecificTargetComplement = 'specificId' in targetComplement && 
                                        targetComplement.specificId;
@@ -105,7 +109,7 @@ export const useReorderComplements = (
         const { error: updateError } = await supabase
           .from("product_specific_complements")
           .update({ order: targetOrder })
-          .eq("id", groupComplements[currentIndex].specificId);
+          .eq("id", currentComplement.specificId);
           
         if (updateError) {
           console.error("Error updating first complement:", updateError);
@@ -127,7 +131,7 @@ export const useReorderComplements = (
         const { error: updateError } = await supabase
           .from("complement_items")
           .update({ order: targetOrder })
-          .eq("id", groupComplements[currentIndex].id);
+          .eq("id", currentComplement.id);
           
         if (updateError) {
           console.error("Error updating first complement item:", updateError);
@@ -149,12 +153,14 @@ export const useReorderComplements = (
       // Reload from database to ensure consistency
       const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
       
-      // Sort the updated complements by order
+      // Sort the updated complements by order then by name
       const sortedUpdatedComplements = [...updatedComplementsData].sort((a, b) => {
         if (a.order !== null && b.order !== null) {
           return a.order - b.order;
         }
-        return 0;
+        if (a.order === null) return 1;
+        if (b.order === null) return -1;
+        return a.name.localeCompare(b.name);
       });
       
       setGroupComplements(sortedUpdatedComplements || []);
@@ -167,7 +173,17 @@ export const useReorderComplements = (
       // Revert optimistic update if there was an error
       if (activeGroup) {
         fetchComplementsByGroup(activeGroup)
-          .then(complements => setGroupComplements(complements || []))
+          .then(complements => {
+            const sortedComplements = [...complements].sort((a, b) => {
+              if (a.order !== null && b.order !== null) {
+                return a.order - b.order;
+              }
+              if (a.order === null) return 1;
+              if (b.order === null) return -1;
+              return a.name.localeCompare(b.name);
+            });
+            setGroupComplements(sortedComplements || []);
+          })
           .catch(err => console.error("Error reverting optimistic update:", err));
       }
     } finally {

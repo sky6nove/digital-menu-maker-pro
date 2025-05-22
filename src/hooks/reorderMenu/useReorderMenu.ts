@@ -35,6 +35,7 @@ export const useReorderMenu = () => {
   const { 
     filteredProducts, 
     activeProduct, 
+    loading: loadingProducts,
     handleProductMove, 
     handleProductSelect 
   } = useReorderProducts(products, activeCategory, loadProducts);
@@ -42,6 +43,7 @@ export const useReorderMenu = () => {
   const { 
     productGroups, 
     activeGroup, 
+    loading: loadingGroups,
     handleGroupMove, 
     handleGroupSelect 
   } = useReorderGroups(activeProduct, fetchComplementGroupsByProduct);
@@ -117,6 +119,8 @@ export const useReorderMenu = () => {
     activeCategory,
     activeProduct,
     activeGroup,
+    loadingProducts,
+    loadingGroups,
     loadingComplements,
     activeCategoryName,
     activeProductName,

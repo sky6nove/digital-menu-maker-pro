@@ -29,7 +29,7 @@ export const useGroupComplements = () => {
           complements:complement_id(id, name, price, is_active)
         `)
         .eq("complement_group_id", groupId)
-        .order('order');
+        .order('order', { ascending: true, nullsFirst: false });
         
       if (specificError) {
         console.error("Error fetching specific complements:", specificError);
@@ -48,12 +48,22 @@ export const useGroupComplements = () => {
           groupId: groupId,
           isActive: item.is_active !== false,
           price: item.custom_price || item.complements?.price || 0,
-          order: item.order || 0
+          order: item.order ?? 999999 // Use a high number as fallback for null
         }));
         
-        console.log("Formatted specific complements:", complements);
-        setGroupComplements(complements);
-        return complements;
+        // Sort by order first, then by name
+        const sortedComplements = [...complements].sort((a, b) => {
+          if (a.order !== null && b.order !== null) {
+            return a.order - b.order;
+          }
+          if (a.order === null) return 1;
+          if (b.order === null) return -1;
+          return a.name.localeCompare(b.name);
+        });
+        
+        console.log("Formatted specific complements:", sortedComplements);
+        setGroupComplements(sortedComplements);
+        return sortedComplements;
       }
       
       // If no specific complements, try fetching from complement_items
@@ -67,7 +77,7 @@ export const useGroupComplements = () => {
           "order"
         `)
         .eq("group_id", groupId)
-        .order('order');
+        .order('order', { ascending: true, nullsFirst: false });
           
       if (itemsError) {
         console.error("Error fetching complement items:", itemsError);
@@ -83,12 +93,22 @@ export const useGroupComplements = () => {
         groupId: groupId,
         isActive: item.is_active !== false,
         price: item.price || 0,
-        order: item.order || 0
+        order: item.order ?? 999999 // Use a high number as fallback for null
       }));
       
-      console.log("Formatted complement items:", formattedItems);
-      setGroupComplements(formattedItems);
-      return formattedItems;
+      // Sort by order first, then by name
+      const sortedItems = [...formattedItems].sort((a, b) => {
+        if (a.order !== null && b.order !== null) {
+          return a.order - b.order;
+        }
+        if (a.order === null) return 1;
+        if (b.order === null) return -1;
+        return a.name.localeCompare(b.name);
+      });
+      
+      console.log("Formatted complement items:", sortedItems);
+      setGroupComplements(sortedItems);
+      return sortedItems;
     } catch (error: any) {
       console.error("Error fetching group complements:", error);
       toast.error("Erro ao carregar complementos do grupo");

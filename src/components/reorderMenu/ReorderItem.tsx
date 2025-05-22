@@ -35,7 +35,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
 
   return (
     <TableRow 
-      className={`${onClick ? 'cursor-pointer' : ''} ${isSelected ? 'bg-muted' : ''}`}
+      className={`transition-colors ${onClick ? 'cursor-pointer hover:bg-muted/50' : ''} ${isSelected ? 'bg-muted' : ''}`}
       onClick={handleItemClick}
     >
       <TableCell className="py-2">
@@ -52,7 +52,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             size="icon" 
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Moving up item", id);
               onMoveUp(id);
             }}
             disabled={isFirst}
@@ -66,7 +65,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             size="icon" 
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Moving down item", id);
               onMoveDown(id);
             }}
             disabled={isLast}
