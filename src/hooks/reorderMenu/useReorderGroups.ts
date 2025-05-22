@@ -19,7 +19,16 @@ export const useReorderGroups = (
           console.log("Loading complement groups for product:", activeProduct);
           const groups = await fetchComplementGroupsByProduct(activeProduct);
           console.log("Loaded complement groups:", groups);
-          setProductGroups(groups || []);
+          
+          // Sort by order if available
+          const sortedGroups = [...groups].sort((a, b) => {
+            if (a.order !== null && b.order !== null) {
+              return a.order - b.order;
+            }
+            return 0;
+          });
+          
+          setProductGroups(sortedGroups || []);
         } catch (error) {
           console.error("Error loading product groups:", error);
           setProductGroups([]);
@@ -71,6 +80,12 @@ export const useReorderGroups = (
         targetOrder
       });
       
+      // Update local state immediately for better UX
+      const updatedGroups = [...productGroups];
+      [updatedGroups[currentIndex], updatedGroups[targetIndex]] = 
+        [updatedGroups[targetIndex], updatedGroups[currentIndex]];
+      setProductGroups(updatedGroups);
+      
       // Check if productGroupId exists before updating
       if (!productGroups[currentIndex].productGroupId || !targetGroup.productGroupId) {
         console.error("Missing productGroupId for one or both groups");
@@ -99,20 +114,30 @@ export const useReorderGroups = (
         throw updateTargetError;
       }
       
-      // Update local state first to provide immediate feedback
-      const updatedGroups = [...productGroups];
-      [updatedGroups[currentIndex], updatedGroups[targetIndex]] = 
-        [updatedGroups[targetIndex], updatedGroups[currentIndex]];
-      setProductGroups(updatedGroups);
-      
       // Then reload from database to ensure consistency
       const updatedGroupsData = await fetchComplementGroupsByProduct(activeProduct);
-      setProductGroups(updatedGroupsData || []);
+      
+      // Sort the updated groups by order
+      const sortedUpdatedGroups = [...updatedGroupsData].sort((a, b) => {
+        if (a.order !== null && b.order !== null) {
+          return a.order - b.order;
+        }
+        return 0;
+      });
+      
+      setProductGroups(sortedUpdatedGroups || []);
       
       toast.success("Ordem atualizada");
     } catch (error) {
       console.error("Error updating group order:", error);
       toast.error("Erro ao atualizar ordem de grupos");
+      
+      // Revert optimistic update if there was an error
+      if (activeProduct) {
+        fetchComplementGroupsByProduct(activeProduct)
+          .then(groups => setProductGroups(groups || []))
+          .catch(err => console.error("Error reverting optimistic update:", err));
+      }
     } finally {
       setSaving(false);
     }

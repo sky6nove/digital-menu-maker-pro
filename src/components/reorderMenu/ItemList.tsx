@@ -1,6 +1,7 @@
 
 import React from "react";
 import ReorderItem from "./ReorderItem";
+import { Table, TableBody } from "@/components/ui/table";
 
 interface Item {
   id: number;
@@ -33,26 +34,24 @@ function ItemList<T extends Item>({
           Nenhum item encontrado.
         </div>
       ) : (
-        safeItems.map((item, index) => (
-          <ReorderItem 
-            key={item.id}
-            id={item.id}
-            name={item.name}
-            isActive={item.isActive !== false}
-            isFirst={index === 0}
-            isLast={index === safeItems.length - 1}
-            onClick={onClick}
-            onMoveUp={() => {
-              console.log("ItemList: Moving up item", item.id);
-              onMoveUp(item.id);
-            }}
-            onMoveDown={() => {
-              console.log("ItemList: Moving down item", item.id);
-              onMoveDown(item.id);
-            }}
-            isSelected={selectedId === item.id}
-          />
-        ))
+        <Table>
+          <TableBody>
+            {safeItems.map((item, index) => (
+              <ReorderItem 
+                key={item.id}
+                id={item.id}
+                name={item.name}
+                isActive={item.isActive !== false}
+                isFirst={index === 0}
+                isLast={index === safeItems.length - 1}
+                onClick={onClick}
+                onMoveUp={onMoveUp}
+                onMoveDown={onMoveDown}
+                isSelected={selectedId === item.id}
+              />
+            ))}
+          </TableBody>
+        </Table>
       )}
     </>
   );

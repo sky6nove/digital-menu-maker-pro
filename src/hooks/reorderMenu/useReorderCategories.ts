@@ -43,6 +43,13 @@ export const useReorderCategories = (
         targetOrder: targetCategory.order
       });
       
+      // Create a copy of the categories array for optimistic UI update
+      const updatedCategories = [...categories];
+      
+      // Swap positions in the UI immediately
+      [updatedCategories[currentIndex], updatedCategories[targetIndex]] = 
+        [updatedCategories[targetIndex], updatedCategories[currentIndex]];
+      
       // Swap order values
       const { error: updateError } = await supabase
         .from("categories")

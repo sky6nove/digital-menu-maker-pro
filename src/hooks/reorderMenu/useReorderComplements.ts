@@ -20,7 +20,16 @@ export const useReorderComplements = (
           console.log("Fetching complements for group:", activeGroup);
           const complements = await fetchComplementsByGroup(activeGroup);
           console.log("Fetched complements:", complements);
-          setGroupComplements(complements || []);
+          
+          // Sort by order if available
+          const sortedComplements = [...complements].sort((a, b) => {
+            if (a.order !== null && b.order !== null) {
+              return a.order - b.order;
+            }
+            return 0;
+          });
+          
+          setGroupComplements(sortedComplements || []);
         } catch (error) {
           console.error("Error loading complements:", error);
           toast.error("Erro ao carregar complementos");
@@ -71,6 +80,12 @@ export const useReorderComplements = (
         currentOrder,
         targetOrder
       });
+      
+      // Update local state immediately for better UX
+      const updatedComplements = [...groupComplements];
+      [updatedComplements[currentIndex], updatedComplements[targetIndex]] = 
+        [updatedComplements[targetIndex], updatedComplements[currentIndex]];
+      setGroupComplements(updatedComplements);
       
       // Determine which table to update based on the complement type
       // Check if the specific complement ID exists
@@ -131,20 +146,30 @@ export const useReorderComplements = (
         }
       }
       
-      // Update local state for immediate feedback
-      const updatedComplements = [...groupComplements];
-      [updatedComplements[currentIndex], updatedComplements[targetIndex]] = 
-        [updatedComplements[targetIndex], updatedComplements[currentIndex]];
-      setGroupComplements(updatedComplements);
-      
-      // Then reload from database to ensure consistency
+      // Reload from database to ensure consistency
       const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
-      setGroupComplements(updatedComplementsData || []);
+      
+      // Sort the updated complements by order
+      const sortedUpdatedComplements = [...updatedComplementsData].sort((a, b) => {
+        if (a.order !== null && b.order !== null) {
+          return a.order - b.order;
+        }
+        return 0;
+      });
+      
+      setGroupComplements(sortedUpdatedComplements || []);
       
       toast.success("Ordem atualizada");
     } catch (error) {
       console.error("Error updating complement order:", error);
       toast.error("Erro ao atualizar ordem de complementos");
+      
+      // Revert optimistic update if there was an error
+      if (activeGroup) {
+        fetchComplementsByGroup(activeGroup)
+          .then(complements => setGroupComplements(complements || []))
+          .catch(err => console.error("Error reverting optimistic update:", err));
+      }
     } finally {
       setSaving(false);
     }

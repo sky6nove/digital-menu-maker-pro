@@ -18,7 +18,16 @@ export const useReorderProducts = (
     if (activeCategory) {
       const filtered = products.filter(p => p.categoryId === activeCategory);
       console.log("Filtered products for category", activeCategory, ":", filtered);
-      setFilteredProducts(filtered);
+      
+      // Sort by display_order if available, otherwise by id
+      const sortedFiltered = [...filtered].sort((a, b) => {
+        if (a.display_order !== null && b.display_order !== null) {
+          return a.display_order - b.display_order;
+        }
+        return a.id - b.id;
+      });
+      
+      setFilteredProducts(sortedFiltered);
       setActiveProduct(null); // Reset product selection
     } else {
       setFilteredProducts([]);
@@ -61,6 +70,12 @@ export const useReorderProducts = (
         targetDisplayOrder
       });
       
+      // Update the local state immediately for a better user experience
+      const updatedFilteredProducts = [...filteredProducts];
+      [updatedFilteredProducts[currentIndex], updatedFilteredProducts[targetIndex]] = 
+        [updatedFilteredProducts[targetIndex], updatedFilteredProducts[currentIndex]];
+      setFilteredProducts(updatedFilteredProducts);
+      
       // Swap display_order values
       const { error: updateError } = await supabase
         .from("products")
@@ -82,12 +97,6 @@ export const useReorderProducts = (
         throw updateTargetError;
       }
       
-      // Update the local filtered products list for immediate feedback
-      const updatedFilteredProducts = [...filteredProducts];
-      [updatedFilteredProducts[currentIndex], updatedFilteredProducts[targetIndex]] = 
-        [updatedFilteredProducts[targetIndex], updatedFilteredProducts[currentIndex]];
-      setFilteredProducts(updatedFilteredProducts);
-      
       // Then reload from database to ensure consistency
       await loadProducts();
       
@@ -95,6 +104,12 @@ export const useReorderProducts = (
     } catch (error) {
       console.error("Error updating product order:", error);
       toast.error("Erro ao atualizar ordem");
+      
+      // Revert optimistic update if there was an error
+      if (activeCategory) {
+        const filtered = products.filter(p => p.categoryId === activeCategory);
+        setFilteredProducts(filtered);
+      }
     } finally {
       setSaving(false);
     }

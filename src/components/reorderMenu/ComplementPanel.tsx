@@ -3,6 +3,7 @@ import React from "react";
 import { toast } from "sonner";
 import ReorderPanel from "./ReorderPanel";
 import ItemList from "./ItemList";
+import { Table, TableBody } from "@/components/ui/table";
 
 interface Complement {
   id: number;
@@ -11,6 +12,7 @@ interface Complement {
   groupName?: string;
   isActive?: boolean;
   price?: number;
+  order?: number;
 }
 
 interface ComplementPanelProps {
@@ -41,17 +43,21 @@ const ComplementPanel: React.FC<ComplementPanelProps> = ({
           <p className="mt-2 text-sm text-muted-foreground">Carregando complementos...</p>
         </div>
       ) : activeGroup && safeComplements.length > 0 ? (
-        <ItemList
-          items={safeComplements}
-          onMoveUp={(id) => {
-            console.log("Moving complement up:", id);
-            handleComplementMove(id, 'up');
-          }}
-          onMoveDown={(id) => {
-            console.log("Moving complement down:", id);
-            handleComplementMove(id, 'down');
-          }}
-        />
+        <Table>
+          <TableBody>
+            <ItemList
+              items={safeComplements}
+              onMoveUp={(id) => {
+                console.log("Moving complement up:", id);
+                handleComplementMove(id, 'up');
+              }}
+              onMoveDown={(id) => {
+                console.log("Moving complement down:", id);
+                handleComplementMove(id, 'down');
+              }}
+            />
+          </TableBody>
+        </Table>
       ) : activeGroup ? (
         <div className="p-4 text-center text-muted-foreground">
           Nenhum complemento encontrado neste grupo.
