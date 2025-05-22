@@ -53,7 +53,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               console.log("Moving up item", id);
-              onMoveUp();
+              onMoveUp(id); // Fixed: Pass the id parameter here
             }}
             disabled={isFirst}
             className="h-7 w-7"
@@ -67,7 +67,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               console.log("Moving down item", id);
-              onMoveDown();
+              onMoveDown(id); // Fixed: Pass the id parameter here
             }}
             disabled={isLast}
             className="h-7 w-7"
