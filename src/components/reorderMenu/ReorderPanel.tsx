@@ -1,6 +1,5 @@
 
 import React, { ReactNode } from "react";
-import { Table, TableBody } from "@/components/ui/table";
 
 interface ReorderPanelProps {
   title: string;
@@ -12,7 +11,7 @@ interface ReorderPanelProps {
 const ReorderPanel: React.FC<ReorderPanelProps> = ({ 
   title, 
   children, 
-  emptyMessage = "No items to display", 
+  emptyMessage = "Nenhum item para exibir", 
   selectedId 
 }) => {
   return (
@@ -22,11 +21,7 @@ const ReorderPanel: React.FC<ReorderPanelProps> = ({
       </div>
       <div className="overflow-y-auto flex-1">
         {React.Children.count(children) > 0 ? (
-          <Table>
-            <TableBody>
-              {children}
-            </TableBody>
-          </Table>
+          children
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             {emptyMessage}

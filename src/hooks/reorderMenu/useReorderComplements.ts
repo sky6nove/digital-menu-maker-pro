@@ -21,13 +21,11 @@ export const useReorderComplements = (
           const complements = await fetchComplementsByGroup(activeGroup);
           console.log("Fetched complements:", complements);
           
-          // Sort by order if available, then by name
+          // Sort by order, handling null values properly
           const sortedComplements = [...complements].sort((a, b) => {
-            if (a.order !== null && b.order !== null) {
-              return a.order - b.order;
-            }
-            if (a.order === null) return 1;
-            if (b.order === null) return -1;
+            const orderA = a.order ?? 999999;
+            const orderB = b.order ?? 999999;
+            if (orderA !== orderB) return orderA - orderB;
             return a.name.localeCompare(b.name);
           });
           
@@ -55,7 +53,15 @@ export const useReorderComplements = (
       return;
     }
     
-    const currentIndex = groupComplements.findIndex(c => c.id === id);
+    // Sort complements by order to ensure consistent indexing
+    const sortedComplements = [...groupComplements].sort((a, b) => {
+      const orderA = a.order ?? 999999;
+      const orderB = b.order ?? 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+    
+    const currentIndex = sortedComplements.findIndex(c => c.id === id);
     if (currentIndex === -1) {
       console.error("Complement not found:", id);
       return;
@@ -63,36 +69,31 @@ export const useReorderComplements = (
     
     if (
       (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= groupComplements.length - 1)
+      (direction === 'down' && currentIndex >= sortedComplements.length - 1)
     ) {
       return; // Already at top/bottom
     }
     
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const currentComplement = sortedComplements[currentIndex];
+    const targetComplement = sortedComplements[targetIndex];
+    
+    // Use the current order values
+    const currentOrder = currentComplement.order ?? 0;
+    const targetOrder = targetComplement.order ?? 0;
+    
+    console.log("Reordering complement:", {
+      current: currentComplement,
+      target: targetComplement,
+      currentOrder,
+      targetOrder,
+      direction
+    });
+    
     try {
       setSaving(true);
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      const currentComplement = groupComplements[currentIndex];
-      const targetComplement = groupComplements[targetIndex];
-      
-      // Get the current order values or use indices as fallback
-      const currentOrder = currentComplement.order ?? currentIndex;
-      const targetOrder = targetComplement.order ?? targetIndex;
-      
-      console.log("Reordering complement:", {
-        current: currentComplement,
-        target: targetComplement,
-        currentOrder,
-        targetOrder
-      });
-      
-      // Update local state immediately for better UX
-      const updatedComplements = [...groupComplements];
-      [updatedComplements[currentIndex], updatedComplements[targetIndex]] = 
-        [updatedComplements[targetIndex], updatedComplements[currentIndex]];
-      setGroupComplements(updatedComplements);
       
       // Determine which table to update based on the complement type
-      // Check if the specific complement ID exists
       const isSpecificComplement = 'specificId' in currentComplement && 
                                   currentComplement.specificId;
       
@@ -105,47 +106,45 @@ export const useReorderComplements = (
       }
       
       if (isSpecificComplement) {
-        // Update first complement's order
-        const { error: updateError } = await supabase
+        // Update in product_specific_complements table
+        const { error: updateCurrentError } = await supabase
           .from("product_specific_complements")
           .update({ order: targetOrder })
           .eq("id", currentComplement.specificId);
           
-        if (updateError) {
-          console.error("Error updating first complement:", updateError);
-          throw updateError;
+        if (updateCurrentError) {
+          console.error("Error updating current complement:", updateCurrentError);
+          throw updateCurrentError;
         }
         
-        // Update second complement's order
         const { error: updateTargetError } = await supabase
           .from("product_specific_complements")
           .update({ order: currentOrder })
           .eq("id", targetComplement.specificId);
           
         if (updateTargetError) {
-          console.error("Error updating second complement:", updateTargetError);
+          console.error("Error updating target complement:", updateTargetError);
           throw updateTargetError;
         }
       } else {
-        // Update first complement's order in complement_items table
-        const { error: updateError } = await supabase
+        // Update in complement_items table
+        const { error: updateCurrentError } = await supabase
           .from("complement_items")
           .update({ order: targetOrder })
           .eq("id", currentComplement.id);
           
-        if (updateError) {
-          console.error("Error updating first complement item:", updateError);
-          throw updateError;
+        if (updateCurrentError) {
+          console.error("Error updating current complement item:", updateCurrentError);
+          throw updateCurrentError;
         }
         
-        // Update second complement's order
         const { error: updateTargetError } = await supabase
           .from("complement_items")
           .update({ order: currentOrder })
           .eq("id", targetComplement.id);
           
         if (updateTargetError) {
-          console.error("Error updating second complement item:", updateTargetError);
+          console.error("Error updating target complement item:", updateTargetError);
           throw updateTargetError;
         }
       }
@@ -153,13 +152,11 @@ export const useReorderComplements = (
       // Reload from database to ensure consistency
       const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
       
-      // Sort the updated complements by order then by name
+      // Sort the updated complements by order
       const sortedUpdatedComplements = [...updatedComplementsData].sort((a, b) => {
-        if (a.order !== null && b.order !== null) {
-          return a.order - b.order;
-        }
-        if (a.order === null) return 1;
-        if (b.order === null) return -1;
+        const orderA = a.order ?? 999999;
+        const orderB = b.order ?? 999999;
+        if (orderA !== orderB) return orderA - orderB;
         return a.name.localeCompare(b.name);
       });
       
@@ -169,23 +166,6 @@ export const useReorderComplements = (
     } catch (error) {
       console.error("Error updating complement order:", error);
       toast.error("Erro ao atualizar ordem de complementos");
-      
-      // Revert optimistic update if there was an error
-      if (activeGroup) {
-        fetchComplementsByGroup(activeGroup)
-          .then(complements => {
-            const sortedComplements = [...complements].sort((a, b) => {
-              if (a.order !== null && b.order !== null) {
-                return a.order - b.order;
-              }
-              if (a.order === null) return 1;
-              if (b.order === null) return -1;
-              return a.name.localeCompare(b.name);
-            });
-            setGroupComplements(sortedComplements || []);
-          })
-          .catch(err => console.error("Error reverting optimistic update:", err));
-      }
     } finally {
       setSaving(false);
     }

@@ -10,6 +10,7 @@ export const useGroupComplements = () => {
   const fetchComplementsByGroup = async (groupId: number) => {
     if (!groupId) {
       console.error("No group ID provided");
+      setGroupComplements([]);
       return [];
     }
     
@@ -33,14 +34,12 @@ export const useGroupComplements = () => {
         
       if (specificError) {
         console.error("Error fetching specific complements:", specificError);
-        throw specificError;
       }
       
       console.log("Specific complements data:", specificComplements);
       
       // If specific complements found, format and return them
       if (specificComplements && specificComplements.length > 0) {
-        // Format the specific complements data for the component
         const complements = specificComplements.map(item => ({
           id: item.complement_id,
           specificId: item.id, // Store the product_specific_complements ID
@@ -48,16 +47,14 @@ export const useGroupComplements = () => {
           groupId: groupId,
           isActive: item.is_active !== false,
           price: item.custom_price || item.complements?.price || 0,
-          order: item.order ?? 999999 // Use a high number as fallback for null
+          order: item.order ?? 999999
         }));
         
-        // Sort by order first, then by name
+        // Sort by order, handling null values properly
         const sortedComplements = [...complements].sort((a, b) => {
-          if (a.order !== null && b.order !== null) {
-            return a.order - b.order;
-          }
-          if (a.order === null) return 1;
-          if (b.order === null) return -1;
+          const orderA = a.order ?? 999999;
+          const orderB = b.order ?? 999999;
+          if (orderA !== orderB) return orderA - orderB;
           return a.name.localeCompare(b.name);
         });
         
@@ -93,16 +90,14 @@ export const useGroupComplements = () => {
         groupId: groupId,
         isActive: item.is_active !== false,
         price: item.price || 0,
-        order: item.order ?? 999999 // Use a high number as fallback for null
+        order: item.order ?? 999999
       }));
       
-      // Sort by order first, then by name
+      // Sort by order, handling null values properly
       const sortedItems = [...formattedItems].sort((a, b) => {
-        if (a.order !== null && b.order !== null) {
-          return a.order - b.order;
-        }
-        if (a.order === null) return 1;
-        if (b.order === null) return -1;
+        const orderA = a.order ?? 999999;
+        const orderB = b.order ?? 999999;
+        if (orderA !== orderB) return orderA - orderB;
         return a.name.localeCompare(b.name);
       });
       
@@ -112,6 +107,7 @@ export const useGroupComplements = () => {
     } catch (error: any) {
       console.error("Error fetching group complements:", error);
       toast.error("Erro ao carregar complementos do grupo");
+      setGroupComplements([]);
       return [];
     } finally {
       setLoading(false);

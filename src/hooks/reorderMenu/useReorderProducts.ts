@@ -23,17 +23,11 @@ export const useReorderProducts = (
       const filtered = products.filter(p => p.categoryId === activeCategory);
       console.log("Filtered products for category", activeCategory, ":", filtered);
       
-      // Sort by display_order if available, otherwise by id
+      // Sort by display_order, handling null values properly
       const sortedFiltered = [...filtered].sort((a, b) => {
-        // If both have valid display_order, use that
-        if (a.display_order !== null && b.display_order !== null) {
-          return a.display_order - b.display_order;
-        }
-        // If only one has display_order, put the one with a value first
-        if (a.display_order !== null) return -1;
-        if (b.display_order !== null) return 1;
-        // Fallback to sorting by id
-        return a.id - b.id;
+        const orderA = a.display_order ?? 999999;
+        const orderB = b.display_order ?? 999999;
+        return orderA - orderB;
       });
       
       setFilteredProducts(sortedFiltered);
@@ -52,7 +46,14 @@ export const useReorderProducts = (
       return;
     }
     
-    const currentIndex = filteredProducts.findIndex(p => p.id === id);
+    // Sort products by display_order to ensure consistent indexing
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
+      const orderA = a.display_order ?? 999999;
+      const orderB = b.display_order ?? 999999;
+      return orderA - orderB;
+    });
+    
+    const currentIndex = sortedProducts.findIndex(p => p.id === id);
     if (currentIndex === -1) {
       console.error("Product not found:", id);
       return;
@@ -60,44 +61,39 @@ export const useReorderProducts = (
     
     if (
       (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= filteredProducts.length - 1)
+      (direction === 'down' && currentIndex >= sortedProducts.length - 1)
     ) {
       return; // Already at top/bottom
     }
     
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    const currentProduct = filteredProducts[currentIndex];
-    const targetProduct = filteredProducts[targetIndex];
+    const currentProduct = sortedProducts[currentIndex];
+    const targetProduct = sortedProducts[targetIndex];
     
-    // Get the current display_order values, use index if null
-    const currentDisplayOrder = currentProduct.display_order ?? currentIndex;
-    const targetDisplayOrder = targetProduct.display_order ?? targetIndex;
+    // Use the current display_order values
+    const currentDisplayOrder = currentProduct.display_order ?? 0;
+    const targetDisplayOrder = targetProduct.display_order ?? 0;
     
     console.log("Reordering product:", {
       currentId: id,
       targetId: targetProduct.id,
       currentDisplayOrder,
-      targetDisplayOrder
+      targetDisplayOrder,
+      direction
     });
     
     try {
       setSaving(true);
       
-      // Update the local state immediately for a better user experience
-      const updatedFilteredProducts = [...filteredProducts];
-      [updatedFilteredProducts[currentIndex], updatedFilteredProducts[targetIndex]] = 
-        [updatedFilteredProducts[targetIndex], updatedFilteredProducts[currentIndex]];
-      setFilteredProducts(updatedFilteredProducts);
-      
       // Swap display_order values
-      const { error: updateError } = await supabase
+      const { error: updateCurrentError } = await supabase
         .from("products")
         .update({ display_order: targetDisplayOrder })
         .eq("id", id);
         
-      if (updateError) {
-        console.error("Error updating first product:", updateError);
-        throw updateError;
+      if (updateCurrentError) {
+        console.error("Error updating current product:", updateCurrentError);
+        throw updateCurrentError;
       }
       
       const { error: updateTargetError } = await supabase
@@ -106,33 +102,17 @@ export const useReorderProducts = (
         .eq("id", targetProduct.id);
         
       if (updateTargetError) {
-        console.error("Error updating second product:", updateTargetError);
+        console.error("Error updating target product:", updateTargetError);
         throw updateTargetError;
       }
       
-      // Then reload from database to ensure consistency
+      // Reload products to reflect changes
       await loadProducts();
       
       toast.success("Ordem atualizada");
     } catch (error) {
       console.error("Error updating product order:", error);
       toast.error("Erro ao atualizar ordem");
-      
-      // Revert optimistic update if there was an error
-      if (activeCategory) {
-        const filtered = products.filter(p => p.categoryId === activeCategory);
-        // Sort by display_order if available, otherwise by id
-        const sortedFiltered = [...filtered].sort((a, b) => {
-          if (a.display_order !== null && b.display_order !== null) {
-            return a.display_order - b.display_order;
-          }
-          // If only one has display_order, put the one with a value first
-          if (a.display_order !== null) return -1;
-          if (b.display_order !== null) return 1;
-          return a.id - b.id;
-        });
-        setFilteredProducts(sortedFiltered);
-      }
     } finally {
       setSaving(false);
     }

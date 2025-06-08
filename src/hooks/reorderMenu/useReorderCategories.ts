@@ -18,7 +18,10 @@ export const useReorderCategories = (
       return;
     }
     
-    const currentIndex = categories.findIndex(c => c.id === id);
+    // Sort categories by order to ensure consistent indexing
+    const sortedCategories = [...categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    const currentIndex = sortedCategories.findIndex(c => c.id === id);
     if (currentIndex === -1) {
       console.error("Category not found:", id);
       return;
@@ -26,53 +29,48 @@ export const useReorderCategories = (
     
     if (
       (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= categories.length - 1)
+      (direction === 'down' && currentIndex >= sortedCategories.length - 1)
     ) {
       return; // Already at top/bottom
     }
     
-    // Create a copy of the categories array for optimistic UI update
-    const updatedCategories = [...categories];
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    const targetCategory = updatedCategories[targetIndex];
+    const currentCategory = sortedCategories[currentIndex];
+    const targetCategory = sortedCategories[targetIndex];
     
-    // Get the current order values, use index if order is null
-    const currentOrder = updatedCategories[currentIndex].order ?? currentIndex;
-    const targetOrder = targetCategory.order ?? targetIndex;
+    // Use the current order values
+    const currentOrder = currentCategory.order || 0;
+    const targetOrder = targetCategory.order || 0;
     
     console.log("Reordering category:", {
       currentId: id,
       targetId: targetCategory.id,
       currentOrder,
-      targetOrder
+      targetOrder,
+      direction
     });
     
     try {
       setSaving(true);
       
-      // Swap positions in the UI immediately (optimistic update)
-      [updatedCategories[currentIndex], updatedCategories[targetIndex]] = 
-        [updatedCategories[targetIndex], updatedCategories[currentIndex]];
-      
-      // Update the first category's order
-      const { error: updateError } = await supabase
+      // Swap the order values
+      const { error: updateCurrentError } = await supabase
         .from("categories")
         .update({ order: targetOrder })
         .eq("id", id);
         
-      if (updateError) {
-        console.error("Error updating first category:", updateError);
-        throw updateError;
+      if (updateCurrentError) {
+        console.error("Error updating current category:", updateCurrentError);
+        throw updateCurrentError;
       }
       
-      // Update the second category's order
       const { error: updateTargetError } = await supabase
         .from("categories")
         .update({ order: currentOrder })
         .eq("id", targetCategory.id);
         
       if (updateTargetError) {
-        console.error("Error updating second category:", updateTargetError);
+        console.error("Error updating target category:", updateTargetError);
         throw updateTargetError;
       }
       
