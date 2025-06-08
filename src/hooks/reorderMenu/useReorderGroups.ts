@@ -29,6 +29,8 @@ export const useReorderGroups = (
             return orderA - orderB;
           });
           
+          console.log("Sorted groups:", sortedGroups.map(g => ({ id: g.id, name: g.name, order: g.order })));
+          
           setProductGroups(sortedGroups || []);
         } catch (error) {
           console.error("Error loading product groups:", error);
@@ -47,8 +49,13 @@ export const useReorderGroups = (
 
   // Handle reordering for complement groups
   const handleGroupMove = async (id: number, direction: 'up' | 'down') => {
+    console.log("=== GROUP MOVE START ===");
+    console.log("Moving group ID:", id, "direction:", direction);
+    console.log("Available product groups:", productGroups);
+
     if (!activeProduct || !productGroups || productGroups.length === 0) {
       console.error("No product groups available to reorder");
+      toast.error("Nenhum grupo disponível para reordenar");
       return;
     }
     
@@ -59,39 +66,38 @@ export const useReorderGroups = (
       return orderA - orderB;
     });
     
+    console.log("Sorted groups:", sortedGroups.map(g => ({ id: g.id, name: g.name, order: g.order, productGroupId: g.productGroupId })));
+    
     const currentIndex = sortedGroups.findIndex(g => g.id === id);
     if (currentIndex === -1) {
       console.error("Group not found:", id);
+      toast.error("Grupo não encontrado");
       return;
     }
     
-    if (
-      (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= sortedGroups.length - 1)
-    ) {
-      return; // Already at top/bottom
+    // Check if move is valid
+    if (direction === 'up' && currentIndex === 0) {
+      console.log("Already at top, cannot move up");
+      return;
+    }
+    if (direction === 'down' && currentIndex === sortedGroups.length - 1) {
+      console.log("Already at bottom, cannot move down");
+      return;
     }
     
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     const currentGroup = sortedGroups[currentIndex];
     const targetGroup = sortedGroups[targetIndex];
     
-    // Use the current order values
+    console.log("Current group:", { id: currentGroup.id, name: currentGroup.name, order: currentGroup.order, productGroupId: currentGroup.productGroupId });
+    console.log("Target group:", { id: targetGroup.id, name: targetGroup.name, order: targetGroup.order, productGroupId: targetGroup.productGroupId });
+    
     const currentOrder = currentGroup.order ?? 0;
     const targetOrder = targetGroup.order ?? 0;
     
-    console.log("Reordering group:", {
-      currentGroupId: id,
-      targetGroupId: targetGroup.id,
-      productGroupId: currentGroup.productGroupId,
-      targetGroupProductId: targetGroup.productGroupId,
-      currentOrder,
-      targetOrder,
-      direction
-    });
-    
     try {
       setSaving(true);
+      console.log("Starting database update...");
       
       // Validate productGroupId exists
       if (!currentGroup.productGroupId || !targetGroup.productGroupId) {
@@ -99,7 +105,7 @@ export const useReorderGroups = (
         throw new Error("Missing productGroupId for groups");
       }
       
-      // Swap order values using productGroupId (the junction table ID)
+      // Update both groups in the database using productGroupId (the junction table ID)
       const { error: updateCurrentError } = await supabase
         .from("product_complement_groups")
         .update({ order: targetOrder })
@@ -109,6 +115,7 @@ export const useReorderGroups = (
         console.error("Error updating current group:", updateCurrentError);
         throw updateCurrentError;
       }
+      console.log("Current group updated successfully");
       
       const { error: updateTargetError } = await supabase
         .from("product_complement_groups")
@@ -119,8 +126,10 @@ export const useReorderGroups = (
         console.error("Error updating target group:", updateTargetError);
         throw updateTargetError;
       }
+      console.log("Target group updated successfully");
       
       // Reload groups to reflect changes
+      console.log("Reloading groups...");
       const updatedGroupsData = await fetchComplementGroupsByProduct(activeProduct);
       const sortedUpdatedGroups = [...updatedGroupsData].sort((a, b) => {
         const orderA = a.order ?? 999999;
@@ -129,17 +138,20 @@ export const useReorderGroups = (
       });
       
       setProductGroups(sortedUpdatedGroups || []);
+      console.log("Groups reloaded successfully");
       
-      toast.success("Ordem atualizada");
+      toast.success("Ordem atualizada com sucesso");
     } catch (error) {
       console.error("Error updating group order:", error);
-      toast.error("Erro ao atualizar ordem de grupos");
+      toast.error("Erro ao atualizar ordem dos grupos");
     } finally {
       setSaving(false);
+      console.log("=== GROUP MOVE END ===");
     }
   };
 
   const handleGroupSelect = (groupId: number) => {
+    console.log("Selecting group:", groupId);
     setActiveGroup(activeGroup === groupId ? null : groupId);
   };
 

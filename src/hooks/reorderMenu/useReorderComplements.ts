@@ -29,6 +29,8 @@ export const useReorderComplements = (
             return a.name.localeCompare(b.name);
           });
           
+          console.log("Sorted complements:", sortedComplements.map(c => ({ id: c.id, name: c.name, order: c.order, specificId: c.specificId })));
+          
           setGroupComplements(sortedComplements || []);
         } catch (error) {
           console.error("Error loading complements:", error);
@@ -48,8 +50,13 @@ export const useReorderComplements = (
 
   // Handle reordering for complements
   const handleComplementMove = async (id: number, direction: 'up' | 'down') => {
+    console.log("=== COMPLEMENT MOVE START ===");
+    console.log("Moving complement ID:", id, "direction:", direction);
+    console.log("Available group complements:", groupComplements);
+
     if (!activeGroup || !groupComplements || groupComplements.length === 0) {
       console.error("No complements available to reorder");
+      toast.error("Nenhum complemento disponível para reordenar");
       return;
     }
     
@@ -61,37 +68,38 @@ export const useReorderComplements = (
       return a.name.localeCompare(b.name);
     });
     
+    console.log("Sorted complements:", sortedComplements.map(c => ({ id: c.id, name: c.name, order: c.order, specificId: c.specificId })));
+    
     const currentIndex = sortedComplements.findIndex(c => c.id === id);
     if (currentIndex === -1) {
       console.error("Complement not found:", id);
+      toast.error("Complemento não encontrado");
       return;
     }
     
-    if (
-      (direction === 'up' && currentIndex <= 0) || 
-      (direction === 'down' && currentIndex >= sortedComplements.length - 1)
-    ) {
-      return; // Already at top/bottom
+    // Check if move is valid
+    if (direction === 'up' && currentIndex === 0) {
+      console.log("Already at top, cannot move up");
+      return;
+    }
+    if (direction === 'down' && currentIndex === sortedComplements.length - 1) {
+      console.log("Already at bottom, cannot move down");
+      return;
     }
     
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     const currentComplement = sortedComplements[currentIndex];
     const targetComplement = sortedComplements[targetIndex];
     
-    // Use the current order values
+    console.log("Current complement:", currentComplement);
+    console.log("Target complement:", targetComplement);
+    
     const currentOrder = currentComplement.order ?? 0;
     const targetOrder = targetComplement.order ?? 0;
     
-    console.log("Reordering complement:", {
-      current: currentComplement,
-      target: targetComplement,
-      currentOrder,
-      targetOrder,
-      direction
-    });
-    
     try {
       setSaving(true);
+      console.log("Starting database update...");
       
       // Determine which table to update based on the complement type
       const isSpecificComplement = 'specificId' in currentComplement && 
@@ -106,6 +114,8 @@ export const useReorderComplements = (
       }
       
       if (isSpecificComplement) {
+        console.log("Updating product_specific_complements table");
+        
         // Update in product_specific_complements table
         const { error: updateCurrentError } = await supabase
           .from("product_specific_complements")
@@ -116,6 +126,7 @@ export const useReorderComplements = (
           console.error("Error updating current complement:", updateCurrentError);
           throw updateCurrentError;
         }
+        console.log("Current specific complement updated successfully");
         
         const { error: updateTargetError } = await supabase
           .from("product_specific_complements")
@@ -126,7 +137,10 @@ export const useReorderComplements = (
           console.error("Error updating target complement:", updateTargetError);
           throw updateTargetError;
         }
+        console.log("Target specific complement updated successfully");
       } else {
+        console.log("Updating complement_items table");
+        
         // Update in complement_items table
         const { error: updateCurrentError } = await supabase
           .from("complement_items")
@@ -137,6 +151,7 @@ export const useReorderComplements = (
           console.error("Error updating current complement item:", updateCurrentError);
           throw updateCurrentError;
         }
+        console.log("Current complement item updated successfully");
         
         const { error: updateTargetError } = await supabase
           .from("complement_items")
@@ -147,9 +162,11 @@ export const useReorderComplements = (
           console.error("Error updating target complement item:", updateTargetError);
           throw updateTargetError;
         }
+        console.log("Target complement item updated successfully");
       }
       
       // Reload from database to ensure consistency
+      console.log("Reloading complements...");
       const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
       
       // Sort the updated complements by order
@@ -161,13 +178,15 @@ export const useReorderComplements = (
       });
       
       setGroupComplements(sortedUpdatedComplements || []);
+      console.log("Complements reloaded successfully");
       
-      toast.success("Ordem atualizada");
+      toast.success("Ordem atualizada com sucesso");
     } catch (error) {
       console.error("Error updating complement order:", error);
-      toast.error("Erro ao atualizar ordem de complementos");
+      toast.error("Erro ao atualizar ordem dos complementos");
     } finally {
       setSaving(false);
+      console.log("=== COMPLEMENT MOVE END ===");
     }
   };
 

@@ -29,8 +29,21 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
 }) => {
   const handleItemClick = () => {
     if (onClick) {
+      console.log("Item clicked:", id, name);
       onClick(id);
     }
+  };
+
+  const handleMoveUp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log("Move up clicked for item:", id, name);
+    onMoveUp(id);
+  };
+
+  const handleMoveDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log("Move down clicked for item:", id, name);
+    onMoveDown(id);
   };
 
   return (
@@ -50,12 +63,10 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onMoveUp(id);
-            }}
+            onClick={handleMoveUp}
             disabled={isFirst}
             className="h-7 w-7"
+            title="Mover para cima"
           >
             <span className="sr-only">Move up</span>
             <ArrowUp className="h-3 w-3" />
@@ -63,12 +74,10 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onMoveDown(id);
-            }}
+            onClick={handleMoveDown}
             disabled={isLast}
             className="h-7 w-7"
+            title="Mover para baixo"
           >
             <span className="sr-only">Move down</span>
             <ArrowDown className="h-3 w-3" />
