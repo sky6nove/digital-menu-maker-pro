@@ -10,7 +10,7 @@ export const useReorderComplements = (
   const [groupComplements, setGroupComplements] = useState<any[]>([]);
   const [loadingComplements, setLoadingComplements] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { reorderItems } = useReorderLogic();
+  const { reorderComplements } = useReorderLogic();
 
   useEffect(() => {
     const loadGroupComplements = async () => {
@@ -52,11 +52,8 @@ export const useReorderComplements = (
 
     setSaving(true);
     
-    // Determine table based on complement type
     const complement = groupComplements.find(c => c.id === id);
     const isSpecificComplement = complement && 'specificId' in complement && complement.specificId;
-    
-    const tableName = isSpecificComplement ? 'product_specific_complements' : 'complement_items';
     const updateId = isSpecificComplement ? complement.specificId : id;
     
     const formattedComplements = groupComplements.map(comp => ({
@@ -66,12 +63,11 @@ export const useReorderComplements = (
       isActive: comp.isActive
     }));
 
-    const success = await reorderItems(
+    const success = await reorderComplements(
       formattedComplements,
       updateId,
       direction,
-      tableName,
-      'order',
+      !!isSpecificComplement,
       async () => {
         const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
         const sortedUpdatedComplements = [...updatedComplementsData].sort((a, b) => {

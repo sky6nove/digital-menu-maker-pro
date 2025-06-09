@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { Category } from "@/types";
 import { useReorderLogic } from "./useReorderLogic";
 
@@ -10,7 +9,7 @@ export const useReorderCategories = (
 ) => {
   const [saving, setSaving] = useState(false);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
-  const { reorderItems } = useReorderLogic();
+  const { reorderCategories } = useReorderLogic();
 
   const handleCategoryMove = async (id: number, direction: 'up' | 'down') => {
     if (saving) return;
@@ -24,12 +23,10 @@ export const useReorderCategories = (
       isActive: cat.isActive
     }));
 
-    const success = await reorderItems(
+    const success = await reorderCategories(
       formattedCategories,
       id,
       direction,
-      'categories',
-      'order',
       loadCategories
     );
     

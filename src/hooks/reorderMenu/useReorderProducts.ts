@@ -12,9 +12,8 @@ export const useReorderProducts = (
   const [activeProduct, setActiveProduct] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { reorderItems } = useReorderLogic();
+  const { reorderProducts } = useReorderLogic();
 
-  // Update filtered products when activeCategory changes
   useEffect(() => {
     if (activeCategory) {
       setLoading(true);
@@ -52,12 +51,10 @@ export const useReorderProducts = (
       isActive: prod.isActive
     }));
 
-    const success = await reorderItems(
+    const success = await reorderProducts(
       formattedProducts,
       id,
       direction,
-      'products',
-      'display_order',
       loadProducts
     );
     

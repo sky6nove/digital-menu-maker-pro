@@ -10,7 +10,7 @@ export const useReorderGroups = (
   const [activeGroup, setActiveGroup] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { reorderItems } = useReorderLogic();
+  const { reorderGroups } = useReorderLogic();
 
   useEffect(() => {
     const loadProductGroups = async () => {
@@ -51,18 +51,16 @@ export const useReorderGroups = (
     setSaving(true);
     
     const formattedGroups = productGroups.map(group => ({
-      id: group.productGroupId, // Use junction table ID for updates
+      id: group.productGroupId,
       name: group.name,
       order: group.order || 0,
       isActive: group.isActive
     }));
 
-    const success = await reorderItems(
+    const success = await reorderGroups(
       formattedGroups,
       productGroups.find(g => g.id === id)?.productGroupId || id,
       direction,
-      'product_complement_groups',
-      'order',
       async () => {
         const updatedGroupsData = await fetchComplementGroupsByProduct(activeProduct);
         const sortedUpdatedGroups = [...updatedGroupsData].sort((a, b) => {
