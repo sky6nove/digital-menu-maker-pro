@@ -2,15 +2,15 @@
 import React from "react";
 import ReorderPanel from "./ReorderPanel";
 import ItemList from "./ItemList";
-import { ComplementGroup } from "@/types";
 
 interface ComplementGroupPanelProps {
   complementGroups: any[];
   activeProduct: number | null;
   activeGroup: number | null;
   productName?: string;
+  saving?: boolean;
   handleGroupSelect: (id: number) => void;
-  handleGroupMove: (id: number, direction: 'up' | 'down') => void;
+  handleGroupMove: (id: number, direction: 'up' | 'down') => Promise<boolean | void>;
 }
 
 const ComplementGroupPanel: React.FC<ComplementGroupPanelProps> = ({
@@ -18,6 +18,7 @@ const ComplementGroupPanel: React.FC<ComplementGroupPanelProps> = ({
   activeProduct,
   activeGroup,
   productName,
+  saving = false,
   handleGroupSelect,
   handleGroupMove
 }) => {
@@ -33,6 +34,7 @@ const ComplementGroupPanel: React.FC<ComplementGroupPanelProps> = ({
           onMoveDown={(id) => handleGroupMove(id, 'down')}
           onClick={handleGroupSelect}
           selectedId={activeGroup}
+          disabled={saving}
         />
       )}
     </ReorderPanel>

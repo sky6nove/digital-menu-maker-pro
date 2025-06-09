@@ -14,6 +14,7 @@ interface ReorderItemProps {
   onMoveUp: (id: number) => void;
   onMoveDown: (id: number) => void;
   isSelected?: boolean;
+  disabled?: boolean;
 }
 
 const ReorderItem: React.FC<ReorderItemProps> = ({ 
@@ -25,30 +26,43 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
   onClick, 
   onMoveUp, 
   onMoveDown,
-  isSelected = false
+  isSelected = false,
+  disabled = false
 }) => {
   const handleItemClick = () => {
-    if (onClick) {
+    if (onClick && !disabled) {
       console.log("Item clicked:", id, name);
       onClick(id);
     }
   };
 
-  const handleMoveUp = (e: React.MouseEvent) => {
+  const handleMoveUp = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (disabled || isFirst) return;
+    
     console.log("Move up clicked for item:", id, name);
-    onMoveUp(id);
+    try {
+      await onMoveUp(id);
+    } catch (error) {
+      console.error("Error moving item up:", error);
+    }
   };
 
-  const handleMoveDown = (e: React.MouseEvent) => {
+  const handleMoveDown = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (disabled || isLast) return;
+    
     console.log("Move down clicked for item:", id, name);
-    onMoveDown(id);
+    try {
+      await onMoveDown(id);
+    } catch (error) {
+      console.error("Error moving item down:", error);
+    }
   };
 
   return (
     <TableRow 
-      className={`transition-colors ${onClick ? 'cursor-pointer hover:bg-muted/50' : ''} ${isSelected ? 'bg-muted' : ''}`}
+      className={`transition-colors ${onClick && !disabled ? 'cursor-pointer hover:bg-muted/50' : ''} ${isSelected ? 'bg-muted' : ''} ${disabled ? 'opacity-50' : ''}`}
       onClick={handleItemClick}
     >
       <TableCell className="py-2">
@@ -64,7 +78,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             variant="ghost" 
             size="icon" 
             onClick={handleMoveUp}
-            disabled={isFirst}
+            disabled={disabled || isFirst}
             className="h-7 w-7"
             title="Mover para cima"
           >
@@ -75,7 +89,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             variant="ghost" 
             size="icon" 
             onClick={handleMoveDown}
-            disabled={isLast}
+            disabled={disabled || isLast}
             className="h-7 w-7"
             title="Mover para baixo"
           >

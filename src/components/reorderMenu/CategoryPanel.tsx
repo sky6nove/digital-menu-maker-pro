@@ -7,13 +7,15 @@ import { Category } from "@/types";
 interface CategoryPanelProps {
   categories: Category[];
   activeCategory: number | null;
+  saving?: boolean;
   handleCategorySelect: (id: number) => void;
-  handleCategoryMove: (id: number, direction: 'up' | 'down') => void;
+  handleCategoryMove: (id: number, direction: 'up' | 'down') => Promise<boolean | void>;
 }
 
 const CategoryPanel: React.FC<CategoryPanelProps> = ({
   categories,
   activeCategory,
+  saving = false,
   handleCategorySelect,
   handleCategoryMove
 }) => {
@@ -28,6 +30,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({
         onMoveDown={(id) => handleCategoryMove(id, 'down')}
         onClick={handleCategorySelect}
         selectedId={activeCategory}
+        disabled={saving}
       />
     </ReorderPanel>
   );

@@ -4,33 +4,34 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { CategoryPanel, ProductPanel, ComplementGroupPanel, ComplementPanel } from "@/components/reorderMenu";
 
 interface ReorderLayoutProps {
-  // Data
   categories: any[];
   filteredProducts: any[];
   productGroups: any[];
   groupComplements: any[];
   
-  // Active states
   activeCategory: number | null;
   activeProduct: number | null;
   activeGroup: number | null;
   
-  // Names for display
   activeCategoryName: string;
   activeProductName: string;
   activeGroupName: string;
   
-  // Loading state
   loadingComplements: boolean;
+  loadingProducts?: boolean;
+  loadingGroups?: boolean;
+  savingCategories?: boolean;
+  savingProducts?: boolean;
+  savingGroups?: boolean;
+  savingComplements?: boolean;
   
-  // Handlers
   handleCategorySelect: (id: number) => void;
   handleProductSelect: (id: number) => void;
   handleGroupSelect: (id: number) => void;
-  handleCategoryMove: (id: number, direction: 'up' | 'down') => void;
-  handleProductMove: (id: number, direction: 'up' | 'down') => void;
-  handleGroupMove: (id: number, direction: 'up' | 'down') => void;
-  handleComplementMove: (id: number, direction: 'up' | 'down') => void;
+  handleCategoryMove: (id: number, direction: 'up' | 'down') => Promise<boolean | void>;
+  handleProductMove: (id: number, direction: 'up' | 'down') => Promise<boolean | void>;
+  handleGroupMove: (id: number, direction: 'up' | 'down') => Promise<boolean | void>;
+  handleComplementMove: (id: number, direction: 'up' | 'down') => Promise<boolean | void>;
 }
 
 const ReorderLayout: React.FC<ReorderLayoutProps> = ({
@@ -45,6 +46,12 @@ const ReorderLayout: React.FC<ReorderLayoutProps> = ({
   activeProductName,
   activeGroupName,
   loadingComplements,
+  loadingProducts = false,
+  loadingGroups = false,
+  savingCategories = false,
+  savingProducts = false,
+  savingGroups = false,
+  savingComplements = false,
   handleCategorySelect,
   handleProductSelect,
   handleGroupSelect,
@@ -55,11 +62,11 @@ const ReorderLayout: React.FC<ReorderLayoutProps> = ({
 }) => {
   return (
     <ResizablePanelGroup direction="horizontal" className="min-h-[500px] border rounded-lg">
-      {/* Categories */}
       <ResizablePanel defaultSize={25}>
         <CategoryPanel 
           categories={categories}
           activeCategory={activeCategory}
+          saving={savingCategories}
           handleCategorySelect={handleCategorySelect}
           handleCategoryMove={handleCategoryMove}
         />
@@ -67,13 +74,14 @@ const ReorderLayout: React.FC<ReorderLayoutProps> = ({
       
       <ResizableHandle withHandle />
       
-      {/* Products */}
       <ResizablePanel defaultSize={25}>
         <ProductPanel 
           products={filteredProducts}
           activeCategory={activeCategory}
           activeProduct={activeProduct}
           categoryName={activeCategoryName}
+          loading={loadingProducts}
+          saving={savingProducts}
           handleProductSelect={handleProductSelect}
           handleProductMove={handleProductMove}
         />
@@ -81,13 +89,13 @@ const ReorderLayout: React.FC<ReorderLayoutProps> = ({
       
       <ResizableHandle withHandle />
       
-      {/* Complement Groups */}
       <ResizablePanel defaultSize={25}>
         <ComplementGroupPanel 
           complementGroups={productGroups}
           activeProduct={activeProduct}
           activeGroup={activeGroup}
           productName={activeProductName}
+          saving={savingGroups}
           handleGroupSelect={handleGroupSelect}
           handleGroupMove={handleGroupMove}
         />
@@ -95,12 +103,12 @@ const ReorderLayout: React.FC<ReorderLayoutProps> = ({
       
       <ResizableHandle withHandle />
       
-      {/* Complements */}
       <ResizablePanel defaultSize={25}>
         <ComplementPanel 
           complements={groupComplements}
           activeGroup={activeGroup}
           groupName={activeGroupName}
+          saving={savingComplements}
           handleComplementMove={handleComplementMove}
           loading={loadingComplements}
         />

@@ -10,8 +10,9 @@ interface ProductPanelProps {
   activeProduct: number | null;
   categoryName?: string;
   loading?: boolean;
+  saving?: boolean;
   handleProductSelect: (id: number) => void;
-  handleProductMove: (id: number, direction: 'up' | 'down') => void;
+  handleProductMove: (id: number, direction: 'up' | 'down') => Promise<boolean | void>;
 }
 
 const ProductPanel: React.FC<ProductPanelProps> = ({
@@ -20,6 +21,7 @@ const ProductPanel: React.FC<ProductPanelProps> = ({
   activeProduct,
   categoryName,
   loading = false,
+  saving = false,
   handleProductSelect,
   handleProductMove
 }) => {
@@ -36,6 +38,7 @@ const ProductPanel: React.FC<ProductPanelProps> = ({
           onClick={handleProductSelect}
           selectedId={activeProduct}
           loading={loading}
+          disabled={saving}
         />
       ) : (
         <div className="p-4 text-center text-muted-foreground">

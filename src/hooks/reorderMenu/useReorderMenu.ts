@@ -28,6 +28,7 @@ export const useReorderMenu = () => {
   // Init specialized hooks
   const { 
     activeCategory, 
+    saving: savingCategories,
     handleCategoryMove, 
     handleCategorySelect
   } = useReorderCategories(categories, loadCategories);
@@ -36,6 +37,7 @@ export const useReorderMenu = () => {
     filteredProducts, 
     activeProduct, 
     loading: loadingProducts,
+    saving: savingProducts,
     handleProductMove, 
     handleProductSelect 
   } = useReorderProducts(products, activeCategory, loadProducts);
@@ -44,17 +46,19 @@ export const useReorderMenu = () => {
     productGroups, 
     activeGroup, 
     loading: loadingGroups,
+    saving: savingGroups,
     handleGroupMove, 
     handleGroupSelect 
   } = useReorderGroups(activeProduct, fetchComplementGroupsByProduct);
   
   const { 
     groupComplements, 
-    loadingComplements, 
+    loadingComplements,
+    saving: savingComplements, 
     handleComplementMove 
   } = useReorderComplements(activeGroup, fetchComplementsByGroup);
 
-  // Load all data - using useCallback to prevent infinite loops
+  // Load all data
   const loadAllData = useCallback(async () => {
     if (!user || dataLoaded) return;
     
@@ -74,7 +78,6 @@ export const useReorderMenu = () => {
     }
   }, [user, loadCategories, loadProducts, loadComplementGroups, dataLoaded]);
 
-  // Load data on component mount
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
@@ -83,8 +86,7 @@ export const useReorderMenu = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // In a real implementation, you would save all the changes here
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate saving
+      await new Promise(resolve => setTimeout(resolve, 500));
       toast.success("Ordem salva com sucesso");
       return true;
     } catch (error) {
@@ -122,6 +124,10 @@ export const useReorderMenu = () => {
     loadingProducts,
     loadingGroups,
     loadingComplements,
+    savingCategories,
+    savingProducts,
+    savingGroups,
+    savingComplements,
     activeCategoryName,
     activeProductName,
     activeGroupName,

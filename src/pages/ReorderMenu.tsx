@@ -20,7 +20,13 @@ const ReorderMenu = () => {
     activeCategory,
     activeProduct,
     activeGroup,
+    loadingProducts,
+    loadingGroups,
     loadingComplements,
+    savingCategories,
+    savingProducts,
+    savingGroups,
+    savingComplements,
     activeCategoryName,
     activeProductName,
     activeGroupName,
@@ -34,12 +40,10 @@ const ReorderMenu = () => {
     handleSave
   } = useReorderMenu();
 
-  // Handle close
   const handleClose = () => {
     navigate('/dashboard');
   };
 
-  // Handle save and navigate
   const handleSaveAndClose = async () => {
     const success = await handleSave();
     if (success) {
@@ -61,6 +65,8 @@ const ReorderMenu = () => {
     );
   }
 
+  const isAnySaving = savingCategories || savingProducts || savingGroups || savingComplements;
+
   return (
     <div className="min-h-screen flex flex-col">
       <AuthNavbar />
@@ -75,7 +81,7 @@ const ReorderMenu = () => {
           </CardHeader>
           <CardContent className="p-6">
             <p className="text-muted-foreground mb-6">
-              Para alterar a ordem dos itens ou categorias do seu cardápio, clique na opção desejada, segure e arraste.
+              Para alterar a ordem dos itens ou categorias do seu cardápio, use os botões de seta para cima e para baixo.
             </p>
             
             <ReorderLayout 
@@ -89,7 +95,13 @@ const ReorderMenu = () => {
               activeCategoryName={activeCategoryName}
               activeProductName={activeProductName}
               activeGroupName={activeGroupName}
+              loadingProducts={loadingProducts}
+              loadingGroups={loadingGroups}
               loadingComplements={loadingComplements}
+              savingCategories={savingCategories}
+              savingProducts={savingProducts}
+              savingGroups={savingGroups}
+              savingComplements={savingComplements}
               handleCategorySelect={handleCategorySelect}
               handleProductSelect={handleProductSelect}
               handleGroupSelect={handleGroupSelect}
@@ -100,11 +112,11 @@ const ReorderMenu = () => {
             />
             
             <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="outline" onClick={handleClose} disabled={isAnySaving}>
                 Cancelar
               </Button>
-              <Button onClick={handleSaveAndClose} disabled={saving}>
-                {saving ? "Salvando..." : "Salvar"}
+              <Button onClick={handleSaveAndClose} disabled={saving || isAnySaving}>
+                {saving || isAnySaving ? "Salvando..." : "Salvar"}
               </Button>
             </div>
           </CardContent>

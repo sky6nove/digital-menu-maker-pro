@@ -1,6 +1,5 @@
 
 import React from "react";
-import { toast } from "sonner";
 import ReorderPanel from "./ReorderPanel";
 import ItemList from "./ItemList";
 
@@ -18,7 +17,8 @@ interface ComplementPanelProps {
   complements: Complement[];
   activeGroup: number | null;
   groupName?: string;
-  handleComplementMove: (id: number, direction: 'up' | 'down') => void;
+  saving?: boolean;
+  handleComplementMove: (id: number, direction: 'up' | 'down') => Promise<boolean | void>;
   loading?: boolean;
 }
 
@@ -26,6 +26,7 @@ const ComplementPanel: React.FC<ComplementPanelProps> = ({
   complements,
   activeGroup,
   groupName,
+  saving = false,
   handleComplementMove,
   loading = false
 }) => {
@@ -47,6 +48,7 @@ const ComplementPanel: React.FC<ComplementPanelProps> = ({
           onMoveUp={(id) => handleComplementMove(id, 'up')}
           onMoveDown={(id) => handleComplementMove(id, 'down')}
           loading={loading}
+          disabled={saving}
         />
       ) : (
         <div className="p-4 text-center text-muted-foreground">

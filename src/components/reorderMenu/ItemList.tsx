@@ -11,11 +11,12 @@ interface Item {
 
 interface ItemListProps<T extends Item> {
   items: T[];
-  onMoveUp: (id: number) => void;
-  onMoveDown: (id: number) => void;
+  onMoveUp: (id: number) => Promise<boolean | void>;
+  onMoveDown: (id: number) => Promise<boolean | void>;
   onClick?: (id: number) => void;
   selectedId?: number | null;
   loading?: boolean;
+  disabled?: boolean;
 }
 
 function ItemList<T extends Item>({ 
@@ -24,9 +25,9 @@ function ItemList<T extends Item>({
   onMoveDown, 
   onClick,
   selectedId,
-  loading = false
+  loading = false,
+  disabled = false
 }: ItemListProps<T>) {
-  // Ensure items is always an array, even if undefined is passed
   const safeItems = items || [];
   
   if (loading) {
@@ -59,6 +60,7 @@ function ItemList<T extends Item>({
                 onMoveUp={onMoveUp}
                 onMoveDown={onMoveDown}
                 isSelected={selectedId === item.id}
+                disabled={disabled}
               />
             ))}
           </TableBody>
