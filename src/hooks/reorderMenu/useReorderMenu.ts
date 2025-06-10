@@ -17,14 +17,12 @@ export const useReorderMenu = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // Import hooks
   const { products, loadProducts } = useProducts(user?.id);
   const { categories, loadCategories } = useCategories(user?.id);
   const { loadComplementGroups } = useComplementGroups();
   const { fetchComplementGroupsByProduct } = useProductComplementGroups();
   const { fetchComplementsByGroup } = useGroupComplements();
   
-  // Init specialized hooks
   const { 
     activeCategory, 
     saving: savingCategories,
@@ -57,7 +55,6 @@ export const useReorderMenu = () => {
     handleComplementMove 
   } = useReorderComplements(activeGroup, fetchComplementsByGroup);
 
-  // Load all data
   const loadAllData = useCallback(async () => {
     if (!user) return;
     
@@ -80,8 +77,7 @@ export const useReorderMenu = () => {
     loadAllData();
   }, [loadAllData]);
 
-  // Handle save & close actions
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -94,9 +90,8 @@ export const useReorderMenu = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, []);
 
-  // Get display names for active items
   const activeCategoryName = activeCategory 
     ? categories.find(c => c.id === activeCategory)?.name || ''
     : '';

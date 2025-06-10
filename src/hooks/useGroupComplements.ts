@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -7,7 +7,7 @@ export const useGroupComplements = () => {
   const [loading, setLoading] = useState(false);
   const [groupComplements, setGroupComplements] = useState<any[]>([]);
 
-  const fetchComplementsByGroup = async (groupId: number) => {
+  const fetchComplementsByGroup = useCallback(async (groupId: number) => {
     if (!groupId) {
       console.error("No group ID provided");
       setGroupComplements([]);
@@ -18,7 +18,6 @@ export const useGroupComplements = () => {
       setLoading(true);
       console.log("Fetching complements for group ID:", groupId);
       
-      // First try to fetch product-specific complements
       const { data: specificComplements, error: specificError } = await supabase
         .from("product_specific_complements")
         .select(`
@@ -38,11 +37,10 @@ export const useGroupComplements = () => {
       
       console.log("Specific complements data:", specificComplements);
       
-      // If specific complements found, format and return them
       if (specificComplements && specificComplements.length > 0) {
         const complements = specificComplements.map(item => ({
           id: item.complement_id,
-          specificId: item.id, // Store the product_specific_complements ID
+          specificId: item.id,
           name: item.complements?.name || 'Complemento sem nome',
           groupId: groupId,
           isActive: item.is_active !== false,
@@ -50,7 +48,6 @@ export const useGroupComplements = () => {
           order: item.order ?? 999999
         }));
         
-        // Sort by order, handling null values properly
         const sortedComplements = [...complements].sort((a, b) => {
           const orderA = a.order ?? 999999;
           const orderB = b.order ?? 999999;
@@ -63,7 +60,6 @@ export const useGroupComplements = () => {
         return sortedComplements;
       }
       
-      // If no specific complements, try fetching from complement_items
       const { data: complementItems, error: itemsError } = await supabase
         .from("complement_items")
         .select(`
@@ -83,7 +79,6 @@ export const useGroupComplements = () => {
       
       console.log("Complement items data:", complementItems);
       
-      // Format the items data for the component
       const formattedItems = (complementItems || []).map(item => ({
         id: item.id,
         name: item.name,
@@ -93,7 +88,6 @@ export const useGroupComplements = () => {
         order: item.order ?? 999999
       }));
       
-      // Sort by order, handling null values properly
       const sortedItems = [...formattedItems].sort((a, b) => {
         const orderA = a.order ?? 999999;
         const orderB = b.order ?? 999999;
@@ -112,7 +106,7 @@ export const useGroupComplements = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     loading,

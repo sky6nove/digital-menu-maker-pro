@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,7 @@ export const useProductComplementGroups = () => {
   const [loading, setLoading] = useState(false);
   const [productComplementGroups, setProductComplementGroups] = useState<any[]>([]);
 
-  const fetchComplementGroupsByProduct = async (productId: number) => {
+  const fetchComplementGroupsByProduct = useCallback(async (productId: number) => {
     if (!productId) {
       console.error("No product ID provided");
       return [];
@@ -46,20 +46,18 @@ export const useProductComplementGroups = () => {
       
       console.log("Product complement groups data:", data);
       
-      // Format the data for easier use in the components
       const formattedGroups = data ? data.map(item => ({
-        id: item.complement_group_id, // This is the actual complement group ID
-        productGroupId: item.id, // This is the product_complement_groups junction table ID
+        id: item.complement_group_id,
+        productGroupId: item.id,
         name: item.complement_groups?.name || 'Unnamed Group',
         isActive: item.complement_groups?.is_active !== false,
-        order: item.order ?? 999999, // Use a high number as fallback for null
+        order: item.order ?? 999999,
         isRequired: item.is_required,
         groupType: item.complement_groups?.group_type,
         minimumQuantity: item.complement_groups?.minimum_quantity,
         maximumQuantity: item.complement_groups?.maximum_quantity
       })) : [];
       
-      // Sort by order if available, otherwise by name
       const sortedGroups = [...formattedGroups].sort((a, b) => {
         if (a.order !== null && b.order !== null) {
           return a.order - b.order;
@@ -79,7 +77,7 @@ export const useProductComplementGroups = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     loading,

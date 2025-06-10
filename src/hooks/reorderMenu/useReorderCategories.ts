@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Category } from "@/types";
 import { useReorderLogic } from "./useReorderLogic";
 
@@ -9,9 +9,9 @@ export const useReorderCategories = (
 ) => {
   const [saving, setSaving] = useState(false);
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
-  const { reorderCategories } = useReorderLogic();
+  const { reorderItems } = useReorderLogic();
 
-  const handleCategoryMove = async (id: number, direction: 'up' | 'down') => {
+  const handleCategoryMove = useCallback(async (id: number, direction: 'up' | 'down') => {
     if (saving) return;
 
     setSaving(true);
@@ -23,20 +23,24 @@ export const useReorderCategories = (
       isActive: cat.isActive
     }));
 
-    const success = await reorderCategories(
+    const success = await reorderItems(
       formattedCategories,
       id,
       direction,
-      loadCategories
+      'categories'
     );
+    
+    if (success) {
+      await loadCategories();
+    }
     
     setSaving(false);
     return success;
-  };
+  }, [categories, saving, reorderItems, loadCategories]);
 
-  const handleCategorySelect = (categoryId: number) => {
+  const handleCategorySelect = useCallback((categoryId: number) => {
     setActiveCategory(activeCategory === categoryId ? null : categoryId);
-  };
+  }, [activeCategory]);
 
   return {
     activeCategory,

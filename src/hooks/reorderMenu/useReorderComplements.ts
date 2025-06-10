@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useReorderLogic } from "./useReorderLogic";
 
@@ -10,40 +10,40 @@ export const useReorderComplements = (
   const [groupComplements, setGroupComplements] = useState<any[]>([]);
   const [loadingComplements, setLoadingComplements] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { reorderComplements } = useReorderLogic();
+  const { reorderItems } = useReorderLogic();
 
-  useEffect(() => {
-    const loadGroupComplements = async () => {
-      if (activeGroup) {
-        setLoadingComplements(true);
-        try {
-          const complements = await fetchComplementsByGroup(activeGroup);
-          
-          const sortedComplements = [...complements].sort((a, b) => {
-            const orderA = a.order ?? 999999;
-            const orderB = b.order ?? 999999;
-            if (orderA !== orderB) return orderA - orderB;
-            return a.name.localeCompare(b.name);
-          });
-          
-          setGroupComplements(sortedComplements || []);
-        } catch (error) {
-          console.error("Error loading complements:", error);
-          toast.error("Erro ao carregar complementos");
-          setGroupComplements([]);
-        } finally {
-          setLoadingComplements(false);
-        }
-      } else {
+  const loadGroupComplements = useCallback(async () => {
+    if (activeGroup) {
+      setLoadingComplements(true);
+      try {
+        const complements = await fetchComplementsByGroup(activeGroup);
+        
+        const sortedComplements = [...complements].sort((a, b) => {
+          const orderA = a.order ?? 999999;
+          const orderB = b.order ?? 999999;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.name.localeCompare(b.name);
+        });
+        
+        setGroupComplements(sortedComplements || []);
+      } catch (error) {
+        console.error("Error loading complements:", error);
+        toast.error("Erro ao carregar complementos");
         setGroupComplements([]);
+      } finally {
         setLoadingComplements(false);
       }
-    };
-
-    loadGroupComplements();
+    } else {
+      setGroupComplements([]);
+      setLoadingComplements(false);
+    }
   }, [activeGroup, fetchComplementsByGroup]);
 
-  const handleComplementMove = async (id: number, direction: 'up' | 'down') => {
+  useEffect(() => {
+    loadGroupComplements();
+  }, [loadGroupComplements]);
+
+  const handleComplementMove = useCallback(async (id: number, direction: 'up' | 'down') => {
     if (saving || !activeGroup) return;
 
     setSaving(true);
@@ -59,26 +59,22 @@ export const useReorderComplements = (
       isActive: comp.isActive
     }));
 
-    const success = await reorderComplements(
+    const tableName = isSpecificComplement ? 'product_specific_complements' : 'complement_items';
+    
+    const success = await reorderItems(
       formattedComplements,
       actualId,
       direction,
-      !!isSpecificComplement,
-      async () => {
-        const updatedComplementsData = await fetchComplementsByGroup(activeGroup);
-        const sortedUpdatedComplements = [...updatedComplementsData].sort((a, b) => {
-          const orderA = a.order ?? 999999;
-          const orderB = b.order ?? 999999;
-          if (orderA !== orderB) return orderA - orderB;
-          return a.name.localeCompare(b.name);
-        });
-        setGroupComplements(sortedUpdatedComplements || []);
-      }
+      tableName
     );
+    
+    if (success) {
+      await loadGroupComplements();
+    }
     
     setSaving(false);
     return success;
-  };
+  }, [groupComplements, saving, activeGroup, reorderItems, loadGroupComplements]);
 
   return {
     groupComplements,

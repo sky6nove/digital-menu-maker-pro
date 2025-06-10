@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { ArrowUp, ArrowDown } from "lucide-react";
@@ -17,7 +17,7 @@ interface ReorderItemProps {
   disabled?: boolean;
 }
 
-const ReorderItem: React.FC<ReorderItemProps> = ({ 
+const ReorderItem: React.FC<ReorderItemProps> = React.memo(({ 
   id, 
   name, 
   isActive = true, 
@@ -29,37 +29,45 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
   isSelected = false,
   disabled = false
 }) => {
-  const handleItemClick = () => {
-    if (onClick && !disabled) {
+  const [isMoving, setIsMoving] = useState(false);
+
+  const handleItemClick = useCallback(() => {
+    if (onClick && !disabled && !isMoving) {
       onClick(id);
     }
-  };
+  }, [onClick, disabled, isMoving, id]);
 
-  const handleMoveUp = async (e: React.MouseEvent) => {
+  const handleMoveUp = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (disabled || isFirst) return;
+    if (disabled || isFirst || isMoving) return;
     
+    setIsMoving(true);
     try {
       await onMoveUp(id);
     } catch (error) {
       console.error("Error moving item up:", error);
+    } finally {
+      setIsMoving(false);
     }
-  };
+  }, [disabled, isFirst, isMoving, onMoveUp, id]);
 
-  const handleMoveDown = async (e: React.MouseEvent) => {
+  const handleMoveDown = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (disabled || isLast) return;
+    if (disabled || isLast || isMoving) return;
     
+    setIsMoving(true);
     try {
       await onMoveDown(id);
     } catch (error) {
       console.error("Error moving item down:", error);
+    } finally {
+      setIsMoving(false);
     }
-  };
+  }, [disabled, isLast, isMoving, onMoveDown, id]);
 
   return (
     <TableRow 
-      className={`transition-colors ${onClick && !disabled ? 'cursor-pointer hover:bg-muted/50' : ''} ${isSelected ? 'bg-muted' : ''} ${disabled ? 'opacity-50' : ''}`}
+      className={`transition-colors ${onClick && !disabled && !isMoving ? 'cursor-pointer hover:bg-muted/50' : ''} ${isSelected ? 'bg-muted' : ''} ${disabled || isMoving ? 'opacity-50' : ''}`}
       onClick={handleItemClick}
     >
       <TableCell className="py-2">
@@ -67,6 +75,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
           <span className={isActive ? "" : "line-through text-muted-foreground"}>
             {name}
           </span>
+          {isMoving && <span className="text-xs text-muted-foreground">Movendo...</span>}
         </div>
       </TableCell>
       <TableCell className="p-0 w-16">
@@ -75,7 +84,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             variant="ghost" 
             size="icon" 
             onClick={handleMoveUp}
-            disabled={disabled || isFirst}
+            disabled={disabled || isFirst || isMoving}
             className="h-7 w-7"
             title="Mover para cima"
           >
@@ -85,7 +94,7 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             variant="ghost" 
             size="icon" 
             onClick={handleMoveDown}
-            disabled={disabled || isLast}
+            disabled={disabled || isLast || isMoving}
             className="h-7 w-7"
             title="Mover para baixo"
           >
@@ -95,6 +104,8 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
       </TableCell>
     </TableRow>
   );
-};
+});
+
+ReorderItem.displayName = "ReorderItem";
 
 export default ReorderItem;
