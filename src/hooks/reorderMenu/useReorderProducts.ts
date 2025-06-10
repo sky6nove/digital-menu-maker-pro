@@ -17,18 +17,13 @@ export const useReorderProducts = (
   useEffect(() => {
     if (activeCategory) {
       setLoading(true);
-      console.log("Filtering products for category:", activeCategory);
       
       const filtered = products.filter(p => p.categoryId === activeCategory);
-      console.log("Filtered products:", filtered.map(p => ({ id: p.id, name: p.name, display_order: p.display_order })));
-      
       const sortedFiltered = [...filtered].sort((a, b) => {
         const orderA = a.display_order ?? 999999;
         const orderB = b.display_order ?? 999999;
         return orderA - orderB;
       });
-      
-      console.log("Sorted filtered products:", sortedFiltered.map(p => ({ id: p.id, name: p.name, display_order: p.display_order })));
       
       setFilteredProducts(sortedFiltered);
       setActiveProduct(null);
@@ -63,7 +58,6 @@ export const useReorderProducts = (
   };
 
   const handleProductSelect = (productId: number) => {
-    console.log("Selecting product:", productId);
     setActiveProduct(activeProduct === productId ? null : productId);
   };
 

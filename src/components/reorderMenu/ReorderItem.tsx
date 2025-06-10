@@ -11,8 +11,8 @@ interface ReorderItemProps {
   isFirst: boolean;
   isLast: boolean;
   onClick?: (id: number) => void;
-  onMoveUp: (id: number) => void;
-  onMoveDown: (id: number) => void;
+  onMoveUp: (id: number) => Promise<boolean | void>;
+  onMoveDown: (id: number) => Promise<boolean | void>;
   isSelected?: boolean;
   disabled?: boolean;
 }
@@ -31,7 +31,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
 }) => {
   const handleItemClick = () => {
     if (onClick && !disabled) {
-      console.log("Item clicked:", id, name);
       onClick(id);
     }
   };
@@ -40,7 +39,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
     e.stopPropagation();
     if (disabled || isFirst) return;
     
-    console.log("Move up clicked for item:", id, name);
     try {
       await onMoveUp(id);
     } catch (error) {
@@ -52,7 +50,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
     e.stopPropagation();
     if (disabled || isLast) return;
     
-    console.log("Move down clicked for item:", id, name);
     try {
       await onMoveDown(id);
     } catch (error) {
@@ -82,7 +79,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             className="h-7 w-7"
             title="Mover para cima"
           >
-            <span className="sr-only">Move up</span>
             <ArrowUp className="h-3 w-3" />
           </Button>
           <Button 
@@ -93,7 +89,6 @@ const ReorderItem: React.FC<ReorderItemProps> = ({
             className="h-7 w-7"
             title="Mover para baixo"
           >
-            <span className="sr-only">Move down</span>
             <ArrowDown className="h-3 w-3" />
           </Button>
         </div>

@@ -10,6 +10,38 @@ export interface ReorderItem {
 }
 
 export const useReorderLogic = () => {
+  // Função genérica para swap de dois itens
+  const swapItems = async (
+    tableName: string,
+    item1: ReorderItem,
+    item2: ReorderItem,
+    orderField: string = 'order'
+  ) => {
+    console.log(`Swapping items in ${tableName}:`, item1.id, 'with', item2.id);
+    
+    try {
+      // Swap direto - trocar os valores de ordem
+      const { error: error1 } = await supabase
+        .from(tableName as any)
+        .update({ [orderField]: item2.order })
+        .eq('id', item1.id);
+      
+      if (error1) throw error1;
+      
+      const { error: error2 } = await supabase
+        .from(tableName as any)
+        .update({ [orderField]: item1.order })
+        .eq('id', item2.id);
+      
+      if (error2) throw error2;
+      
+      return true;
+    } catch (error) {
+      console.error(`Error swapping items in ${tableName}:`, error);
+      return false;
+    }
+  };
+
   // Função específica para reordenar categorias
   const reorderCategories = async (
     items: ReorderItem[],
@@ -17,73 +49,30 @@ export const useReorderLogic = () => {
     direction: 'up' | 'down',
     reloadFunction: () => Promise<void>
   ) => {
-    console.log("=== REORDER CATEGORIES START ===");
-    console.log("Moving category ID:", itemId, "direction:", direction);
-
-    if (!items || items.length === 0) {
-      console.error("No category items available to reorder");
-      toast.error("Nenhum item disponível para reordenar");
-      return false;
-    }
-
+    console.log("=== REORDER CATEGORIES ===");
+    
     const sortedItems = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
     const currentIndex = sortedItems.findIndex(item => item.id === itemId);
     
-    if (currentIndex === -1) {
-      console.error("Category not found:", itemId);
-      toast.error("Item não encontrado");
-      return false;
-    }
-
-    if (direction === 'up' && currentIndex === 0) {
-      console.log("Already at top, cannot move up");
-      return false;
-    }
-    if (direction === 'down' && currentIndex === sortedItems.length - 1) {
-      console.log("Already at bottom, cannot move down");
-      return false;
-    }
-
+    if (currentIndex === -1) return false;
+    
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    const currentItem = sortedItems[currentIndex];
-    const targetItem = sortedItems[targetIndex];
-
-    try {
-      // Swap manual com valores temporários
-      const tempOrder = 999999;
-      
-      const { error: tempError } = await supabase
-        .from('categories')
-        .update({ order: tempOrder })
-        .eq('id', currentItem.id);
-      
-      if (tempError) throw tempError;
-      
-      const { error: targetError } = await supabase
-        .from('categories')
-        .update({ order: currentItem.order })
-        .eq('id', targetItem.id);
-      
-      if (targetError) throw targetError;
-      
-      const { error: finalError } = await supabase
-        .from('categories')
-        .update({ order: targetItem.order })
-        .eq('id', currentItem.id);
-      
-      if (finalError) throw finalError;
-
-      console.log("Categories reorder completed successfully");
+    if (targetIndex < 0 || targetIndex >= sortedItems.length) return false;
+    
+    const success = await swapItems(
+      'categories',
+      sortedItems[currentIndex],
+      sortedItems[targetIndex]
+    );
+    
+    if (success) {
       await reloadFunction();
       toast.success("Ordem atualizada com sucesso");
-      return true;
-    } catch (error) {
-      console.error("Error updating categories order:", error);
+    } else {
       toast.error("Erro ao atualizar ordem");
-      return false;
-    } finally {
-      console.log("=== REORDER CATEGORIES END ===");
     }
+    
+    return success;
   };
 
   // Função específica para reordenar produtos
@@ -93,72 +82,31 @@ export const useReorderLogic = () => {
     direction: 'up' | 'down',
     reloadFunction: () => Promise<void>
   ) => {
-    console.log("=== REORDER PRODUCTS START ===");
-    console.log("Moving product ID:", itemId, "direction:", direction);
-
-    if (!items || items.length === 0) {
-      console.error("No product items available to reorder");
-      toast.error("Nenhum item disponível para reordenar");
-      return false;
-    }
-
+    console.log("=== REORDER PRODUCTS ===");
+    
     const sortedItems = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
     const currentIndex = sortedItems.findIndex(item => item.id === itemId);
     
-    if (currentIndex === -1) {
-      console.error("Product not found:", itemId);
-      toast.error("Item não encontrado");
-      return false;
-    }
-
-    if (direction === 'up' && currentIndex === 0) {
-      console.log("Already at top, cannot move up");
-      return false;
-    }
-    if (direction === 'down' && currentIndex === sortedItems.length - 1) {
-      console.log("Already at bottom, cannot move down");
-      return false;
-    }
-
+    if (currentIndex === -1) return false;
+    
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    const currentItem = sortedItems[currentIndex];
-    const targetItem = sortedItems[targetIndex];
-
-    try {
-      const tempOrder = 999999;
-      
-      const { error: tempError } = await supabase
-        .from('products')
-        .update({ display_order: tempOrder })
-        .eq('id', currentItem.id);
-      
-      if (tempError) throw tempError;
-      
-      const { error: targetError } = await supabase
-        .from('products')
-        .update({ display_order: currentItem.order })
-        .eq('id', targetItem.id);
-      
-      if (targetError) throw targetError;
-      
-      const { error: finalError } = await supabase
-        .from('products')
-        .update({ display_order: targetItem.order })
-        .eq('id', currentItem.id);
-      
-      if (finalError) throw finalError;
-
-      console.log("Products reorder completed successfully");
+    if (targetIndex < 0 || targetIndex >= sortedItems.length) return false;
+    
+    const success = await swapItems(
+      'products',
+      sortedItems[currentIndex],
+      sortedItems[targetIndex],
+      'display_order'
+    );
+    
+    if (success) {
       await reloadFunction();
       toast.success("Ordem atualizada com sucesso");
-      return true;
-    } catch (error) {
-      console.error("Error updating products order:", error);
+    } else {
       toast.error("Erro ao atualizar ordem");
-      return false;
-    } finally {
-      console.log("=== REORDER PRODUCTS END ===");
     }
+    
+    return success;
   };
 
   // Função específica para reordenar grupos de complementos
@@ -168,72 +116,30 @@ export const useReorderLogic = () => {
     direction: 'up' | 'down',
     reloadFunction: () => Promise<void>
   ) => {
-    console.log("=== REORDER GROUPS START ===");
-    console.log("Moving group ID:", itemId, "direction:", direction);
-
-    if (!items || items.length === 0) {
-      console.error("No group items available to reorder");
-      toast.error("Nenhum item disponível para reordenar");
-      return false;
-    }
-
+    console.log("=== REORDER GROUPS ===");
+    
     const sortedItems = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
     const currentIndex = sortedItems.findIndex(item => item.id === itemId);
     
-    if (currentIndex === -1) {
-      console.error("Group not found:", itemId);
-      toast.error("Item não encontrado");
-      return false;
-    }
-
-    if (direction === 'up' && currentIndex === 0) {
-      console.log("Already at top, cannot move up");
-      return false;
-    }
-    if (direction === 'down' && currentIndex === sortedItems.length - 1) {
-      console.log("Already at bottom, cannot move down");
-      return false;
-    }
-
+    if (currentIndex === -1) return false;
+    
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    const currentItem = sortedItems[currentIndex];
-    const targetItem = sortedItems[targetIndex];
-
-    try {
-      const tempOrder = 999999;
-      
-      const { error: tempError } = await supabase
-        .from('product_complement_groups')
-        .update({ order: tempOrder })
-        .eq('id', currentItem.id);
-      
-      if (tempError) throw tempError;
-      
-      const { error: targetError } = await supabase
-        .from('product_complement_groups')
-        .update({ order: currentItem.order })
-        .eq('id', targetItem.id);
-      
-      if (targetError) throw targetError;
-      
-      const { error: finalError } = await supabase
-        .from('product_complement_groups')
-        .update({ order: targetItem.order })
-        .eq('id', currentItem.id);
-      
-      if (finalError) throw finalError;
-
-      console.log("Groups reorder completed successfully");
+    if (targetIndex < 0 || targetIndex >= sortedItems.length) return false;
+    
+    const success = await swapItems(
+      'product_complement_groups',
+      sortedItems[currentIndex],
+      sortedItems[targetIndex]
+    );
+    
+    if (success) {
       await reloadFunction();
       toast.success("Ordem atualizada com sucesso");
-      return true;
-    } catch (error) {
-      console.error("Error updating groups order:", error);
+    } else {
       toast.error("Erro ao atualizar ordem");
-      return false;
-    } finally {
-      console.log("=== REORDER GROUPS END ===");
     }
+    
+    return success;
   };
 
   // Função específica para reordenar complementos
@@ -244,73 +150,32 @@ export const useReorderLogic = () => {
     isSpecificComplement: boolean,
     reloadFunction: () => Promise<void>
   ) => {
-    console.log("=== REORDER COMPLEMENTS START ===");
-    console.log("Moving complement ID:", itemId, "direction:", direction, "isSpecific:", isSpecificComplement);
-
-    if (!items || items.length === 0) {
-      console.error("No complement items available to reorder");
-      toast.error("Nenhum item disponível para reordenar");
-      return false;
-    }
-
+    console.log("=== REORDER COMPLEMENTS ===");
+    
     const sortedItems = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
     const currentIndex = sortedItems.findIndex(item => item.id === itemId);
     
-    if (currentIndex === -1) {
-      console.error("Complement not found:", itemId);
-      toast.error("Item não encontrado");
-      return false;
-    }
-
-    if (direction === 'up' && currentIndex === 0) {
-      console.log("Already at top, cannot move up");
-      return false;
-    }
-    if (direction === 'down' && currentIndex === sortedItems.length - 1) {
-      console.log("Already at bottom, cannot move down");
-      return false;
-    }
-
+    if (currentIndex === -1) return false;
+    
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    const currentItem = sortedItems[currentIndex];
-    const targetItem = sortedItems[targetIndex];
-
-    try {
-      const tempOrder = 999999;
-      const tableName = isSpecificComplement ? 'product_specific_complements' : 'complement_items';
-      
-      const { error: tempError } = await supabase
-        .from(tableName as any)
-        .update({ order: tempOrder })
-        .eq('id', currentItem.id);
-      
-      if (tempError) throw tempError;
-      
-      const { error: targetError } = await supabase
-        .from(tableName as any)
-        .update({ order: currentItem.order })
-        .eq('id', targetItem.id);
-      
-      if (targetError) throw targetError;
-      
-      const { error: finalError } = await supabase
-        .from(tableName as any)
-        .update({ order: targetItem.order })
-        .eq('id', currentItem.id);
-      
-      if (finalError) throw finalError;
-
-      console.log("Complements reorder completed successfully");
+    if (targetIndex < 0 || targetIndex >= sortedItems.length) return false;
+    
+    const tableName = isSpecificComplement ? 'product_specific_complements' : 'complement_items';
+    
+    const success = await swapItems(
+      tableName,
+      sortedItems[currentIndex],
+      sortedItems[targetIndex]
+    );
+    
+    if (success) {
       await reloadFunction();
       toast.success("Ordem atualizada com sucesso");
-      return true;
-    } catch (error) {
-      console.error("Error updating complements order:", error);
+    } else {
       toast.error("Erro ao atualizar ordem");
-      return false;
-    } finally {
-      console.log("=== REORDER COMPLEMENTS END ===");
     }
+    
+    return success;
   };
 
   return { 

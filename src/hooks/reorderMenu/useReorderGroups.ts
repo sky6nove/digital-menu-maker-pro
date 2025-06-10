@@ -17,17 +17,13 @@ export const useReorderGroups = (
       if (activeProduct) {
         try {
           setLoading(true);
-          console.log("Loading complement groups for product:", activeProduct);
           const groups = await fetchComplementGroupsByProduct(activeProduct);
-          console.log("Loaded complement groups:", groups);
           
           const sortedGroups = [...groups].sort((a, b) => {
             const orderA = a.order ?? 999999;
             const orderB = b.order ?? 999999;
             return orderA - orderB;
           });
-          
-          console.log("Sorted groups:", sortedGroups.map(g => ({ id: g.id, name: g.name, order: g.order })));
           
           setProductGroups(sortedGroups || []);
         } catch (error) {
@@ -51,7 +47,7 @@ export const useReorderGroups = (
     setSaving(true);
     
     const formattedGroups = productGroups.map(group => ({
-      id: group.productGroupId,
+      id: group.id, // Usar o ID correto do registro na tabela product_complement_groups
       name: group.name,
       order: group.order || 0,
       isActive: group.isActive
@@ -59,7 +55,7 @@ export const useReorderGroups = (
 
     const success = await reorderGroups(
       formattedGroups,
-      productGroups.find(g => g.id === id)?.productGroupId || id,
+      id,
       direction,
       async () => {
         const updatedGroupsData = await fetchComplementGroupsByProduct(activeProduct);
@@ -77,7 +73,6 @@ export const useReorderGroups = (
   };
 
   const handleGroupSelect = (groupId: number) => {
-    console.log("Selecting group:", groupId);
     setActiveGroup(activeGroup === groupId ? null : groupId);
   };
 

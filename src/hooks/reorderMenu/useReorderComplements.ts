@@ -17,9 +17,7 @@ export const useReorderComplements = (
       if (activeGroup) {
         setLoadingComplements(true);
         try {
-          console.log("Fetching complements for group:", activeGroup);
           const complements = await fetchComplementsByGroup(activeGroup);
-          console.log("Fetched complements:", complements);
           
           const sortedComplements = [...complements].sort((a, b) => {
             const orderA = a.order ?? 999999;
@@ -27,8 +25,6 @@ export const useReorderComplements = (
             if (orderA !== orderB) return orderA - orderB;
             return a.name.localeCompare(b.name);
           });
-          
-          console.log("Sorted complements:", sortedComplements.map(c => ({ id: c.id, name: c.name, order: c.order, specificId: c.specificId })));
           
           setGroupComplements(sortedComplements || []);
         } catch (error) {
@@ -54,10 +50,10 @@ export const useReorderComplements = (
     
     const complement = groupComplements.find(c => c.id === id);
     const isSpecificComplement = complement && 'specificId' in complement && complement.specificId;
-    const updateId = isSpecificComplement ? complement.specificId : id;
+    const actualId = isSpecificComplement ? complement.specificId : id;
     
     const formattedComplements = groupComplements.map(comp => ({
-      id: isSpecificComplement ? comp.specificId : comp.id,
+      id: isSpecificComplement ? comp.specificId || comp.id : comp.id,
       name: comp.name,
       order: comp.order || 0,
       isActive: comp.isActive
@@ -65,7 +61,7 @@ export const useReorderComplements = (
 
     const success = await reorderComplements(
       formattedComplements,
-      updateId,
+      actualId,
       direction,
       !!isSpecificComplement,
       async () => {

@@ -16,12 +16,11 @@ export const useReorderMenu = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
   
   // Import hooks
   const { products, loadProducts } = useProducts(user?.id);
   const { categories, loadCategories } = useCategories(user?.id);
-  const { complementGroups, loadComplementGroups } = useComplementGroups();
+  const { loadComplementGroups } = useComplementGroups();
   const { fetchComplementGroupsByProduct } = useProductComplementGroups();
   const { fetchComplementsByGroup } = useGroupComplements();
   
@@ -60,7 +59,7 @@ export const useReorderMenu = () => {
 
   // Load all data
   const loadAllData = useCallback(async () => {
-    if (!user || dataLoaded) return;
+    if (!user) return;
     
     setLoading(true);
     try {
@@ -69,14 +68,13 @@ export const useReorderMenu = () => {
         loadProducts(),
         loadComplementGroups()
       ]);
-      setDataLoaded(true);
     } catch (error) {
       toast.error("Erro ao carregar dados");
       console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
-  }, [user, loadCategories, loadProducts, loadComplementGroups, dataLoaded]);
+  }, [user, loadCategories, loadProducts, loadComplementGroups]);
 
   useEffect(() => {
     loadAllData();

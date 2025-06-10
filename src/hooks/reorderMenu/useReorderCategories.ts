@@ -35,7 +35,6 @@ export const useReorderCategories = (
   };
 
   const handleCategorySelect = (categoryId: number) => {
-    console.log("Selecting category:", categoryId);
     setActiveCategory(activeCategory === categoryId ? null : categoryId);
   };
 
