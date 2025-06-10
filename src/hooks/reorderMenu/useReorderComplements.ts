@@ -13,68 +13,71 @@ export const useReorderComplements = (
   const { reorderItems } = useReorderLogic();
 
   const loadGroupComplements = useCallback(async () => {
-    if (activeGroup) {
-      setLoadingComplements(true);
-      try {
-        const complements = await fetchComplementsByGroup(activeGroup);
-        
-        const sortedComplements = [...complements].sort((a, b) => {
-          const orderA = a.order ?? 999999;
-          const orderB = b.order ?? 999999;
-          if (orderA !== orderB) return orderA - orderB;
-          return a.name.localeCompare(b.name);
-        });
-        
-        setGroupComplements(sortedComplements || []);
-      } catch (error) {
-        console.error("Error loading complements:", error);
-        toast.error("Erro ao carregar complementos");
-        setGroupComplements([]);
-      } finally {
-        setLoadingComplements(false);
-      }
-    } else {
+    if (!activeGroup) {
       setGroupComplements([]);
+      return;
+    }
+
+    setLoadingComplements(true);
+    try {
+      const complements = await fetchComplementsByGroup(activeGroup);
+      
+      const sortedComplements = [...(complements || [])].sort((a, b) => {
+        const orderA = a.order ?? 999999;
+        const orderB = b.order ?? 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name);
+      });
+      
+      setGroupComplements(sortedComplements);
+    } catch (error) {
+      console.error("Error loading complements:", error);
+      toast.error("Erro ao carregar complementos");
+      setGroupComplements([]);
+    } finally {
       setLoadingComplements(false);
     }
   }, [activeGroup, fetchComplementsByGroup]);
 
   useEffect(() => {
     loadGroupComplements();
-  }, [loadGroupComplements]);
+  }, [activeGroup]);
 
   const handleComplementMove = useCallback(async (id: number, direction: 'up' | 'down') => {
     if (saving || !activeGroup) return;
 
     setSaving(true);
     
-    const complement = groupComplements.find(c => c.id === id);
-    const isSpecificComplement = complement && 'specificId' in complement && complement.specificId;
-    const actualId = isSpecificComplement ? complement.specificId : id;
-    
-    const formattedComplements = groupComplements.map(comp => ({
-      id: isSpecificComplement ? comp.specificId || comp.id : comp.id,
-      name: comp.name,
-      order: comp.order || 0,
-      isActive: comp.isActive
-    }));
+    try {
+      const complement = groupComplements.find(c => c.id === id);
+      const isSpecificComplement = complement && 'specificId' in complement && complement.specificId;
+      const actualId = isSpecificComplement ? complement.specificId : id;
+      
+      const formattedComplements = groupComplements.map(comp => ({
+        id: isSpecificComplement ? comp.specificId || comp.id : comp.id,
+        name: comp.name,
+        order: comp.order || 0,
+        isActive: comp.isActive
+      }));
 
-    const tableName = isSpecificComplement ? 'product_specific_complements' : 'complement_items';
-    
-    const success = await reorderItems(
-      formattedComplements,
-      actualId,
-      direction,
-      tableName
-    );
-    
-    if (success) {
-      await loadGroupComplements();
+      const tableName = isSpecificComplement ? 'product_specific_complements' : 'complement_items';
+      
+      const success = await reorderItems(
+        formattedComplements,
+        actualId,
+        direction,
+        tableName
+      );
+      
+      if (success) {
+        await loadGroupComplements();
+      }
+      
+      return success;
+    } finally {
+      setSaving(false);
     }
-    
-    setSaving(false);
-    return success;
-  }, [groupComplements, saving, activeGroup, reorderItems, loadGroupComplements]);
+  }, [groupComplements, activeGroup, reorderItems, loadGroupComplements, saving]);
 
   return {
     groupComplements,

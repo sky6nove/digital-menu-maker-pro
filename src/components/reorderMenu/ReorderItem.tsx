@@ -1,5 +1,5 @@
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { ArrowUp, ArrowDown } from "lucide-react";
@@ -17,7 +17,7 @@ interface ReorderItemProps {
   disabled?: boolean;
 }
 
-const ReorderItem: React.FC<ReorderItemProps> = React.memo(({ 
+const ReorderItem: React.FC<ReorderItemProps> = memo(({ 
   id, 
   name, 
   isActive = true, 

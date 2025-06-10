@@ -16,27 +16,30 @@ export const useReorderCategories = (
 
     setSaving(true);
     
-    const formattedCategories = categories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      order: cat.order || 0,
-      isActive: cat.isActive
-    }));
+    try {
+      const formattedCategories = categories.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        order: cat.order || 0,
+        isActive: cat.isActive
+      }));
 
-    const success = await reorderItems(
-      formattedCategories,
-      id,
-      direction,
-      'categories'
-    );
-    
-    if (success) {
-      await loadCategories();
+      const success = await reorderItems(
+        formattedCategories,
+        id,
+        direction,
+        'categories'
+      );
+      
+      if (success) {
+        await loadCategories();
+      }
+      
+      return success;
+    } finally {
+      setSaving(false);
     }
-    
-    setSaving(false);
-    return success;
-  }, [categories, saving, reorderItems, loadCategories]);
+  }, [categories, reorderItems, loadCategories, saving]);
 
   const handleCategorySelect = useCallback((categoryId: number) => {
     setActiveCategory(activeCategory === categoryId ? null : categoryId);

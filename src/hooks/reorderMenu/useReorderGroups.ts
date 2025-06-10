@@ -13,60 +13,65 @@ export const useReorderGroups = (
   const { reorderItems } = useReorderLogic();
 
   const loadProductGroups = useCallback(async () => {
-    if (activeProduct) {
-      try {
-        setLoading(true);
-        const groups = await fetchComplementGroupsByProduct(activeProduct);
-        
-        const sortedGroups = [...groups].sort((a, b) => {
-          const orderA = a.order ?? 999999;
-          const orderB = b.order ?? 999999;
-          return orderA - orderB;
-        });
-        
-        setProductGroups(sortedGroups || []);
-      } catch (error) {
-        console.error("Error loading product groups:", error);
-        setProductGroups([]);
-      } finally {
-        setLoading(false);
-      }
-    } else {
+    if (!activeProduct) {
       setProductGroups([]);
+      setActiveGroup(null);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const groups = await fetchComplementGroupsByProduct(activeProduct);
+      
+      const sortedGroups = [...(groups || [])].sort((a, b) => {
+        const orderA = a.order ?? 999999;
+        const orderB = b.order ?? 999999;
+        return orderA - orderB;
+      });
+      
+      setProductGroups(sortedGroups);
+    } catch (error) {
+      console.error("Error loading product groups:", error);
+      setProductGroups([]);
+    } finally {
+      setLoading(false);
     }
     setActiveGroup(null);
   }, [activeProduct, fetchComplementGroupsByProduct]);
 
   useEffect(() => {
     loadProductGroups();
-  }, [loadProductGroups]);
+  }, [activeProduct]);
 
   const handleGroupMove = useCallback(async (id: number, direction: 'up' | 'down') => {
     if (saving || !activeProduct) return;
 
     setSaving(true);
     
-    const formattedGroups = productGroups.map(group => ({
-      id: group.productGroupId || group.id,
-      name: group.name,
-      order: group.order || 0,
-      isActive: group.isActive
-    }));
+    try {
+      const formattedGroups = productGroups.map(group => ({
+        id: group.productGroupId || group.id,
+        name: group.name,
+        order: group.order || 0,
+        isActive: group.isActive
+      }));
 
-    const success = await reorderItems(
-      formattedGroups,
-      id,
-      direction,
-      'product_complement_groups'
-    );
-    
-    if (success) {
-      await loadProductGroups();
+      const success = await reorderItems(
+        formattedGroups,
+        id,
+        direction,
+        'product_complement_groups'
+      );
+      
+      if (success) {
+        await loadProductGroups();
+      }
+      
+      return success;
+    } finally {
+      setSaving(false);
     }
-    
-    setSaving(false);
-    return success;
-  }, [productGroups, saving, activeProduct, reorderItems, loadProductGroups]);
+  }, [productGroups, activeProduct, reorderItems, loadProductGroups, saving]);
 
   const handleGroupSelect = useCallback((groupId: number) => {
     setActiveGroup(activeGroup === groupId ? null : groupId);

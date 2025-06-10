@@ -20,15 +20,17 @@ export const useReorderLogic = () => {
     orderField: string = 'order'
   ) => {
     try {
+      // Update first item
       const { error: error1 } = await supabase
-        .from(tableName as any)
+        .from(tableName)
         .update({ [orderField]: item2Order })
         .eq('id', item1Id);
       
       if (error1) throw error1;
       
+      // Update second item
       const { error: error2 } = await supabase
-        .from(tableName as any)
+        .from(tableName)
         .update({ [orderField]: item1Order })
         .eq('id', item2Id);
       
@@ -37,6 +39,7 @@ export const useReorderLogic = () => {
       return true;
     } catch (error) {
       console.error(`Error swapping items in ${tableName}:`, error);
+      toast.error("Erro ao atualizar ordem");
       return false;
     }
   }, []);
@@ -70,8 +73,6 @@ export const useReorderLogic = () => {
     
     if (success) {
       toast.success("Ordem atualizada com sucesso");
-    } else {
-      toast.error("Erro ao atualizar ordem");
     }
     
     return success;

@@ -23,21 +23,32 @@ export const useReorderMenu = () => {
   const { fetchComplementGroupsByProduct } = useProductComplementGroups();
   const { fetchComplementsByGroup } = useGroupComplements();
   
+  // Memoize load functions to prevent infinite loops
+  const memoizedLoadCategories = useCallback(() => loadCategories(), [loadCategories]);
+  const memoizedLoadProducts = useCallback(() => loadProducts(), [loadProducts]);
+  const memoizedFetchComplementGroupsByProduct = useCallback(
+    (productId: number) => fetchComplementGroupsByProduct(productId),
+    [fetchComplementGroupsByProduct]
+  );
+  const memoizedFetchComplementsByGroup = useCallback(
+    (groupId: number) => fetchComplementsByGroup(groupId),
+    [fetchComplementsByGroup]
+  );
+  
   const { 
     activeCategory, 
     saving: savingCategories,
     handleCategoryMove, 
     handleCategorySelect
-  } = useReorderCategories(categories, loadCategories);
+  } = useReorderCategories(categories, memoizedLoadCategories);
   
   const { 
     filteredProducts, 
     activeProduct, 
-    loading: loadingProducts,
     saving: savingProducts,
     handleProductMove, 
     handleProductSelect 
-  } = useReorderProducts(products, activeCategory, loadProducts);
+  } = useReorderProducts(products, activeCategory, memoizedLoadProducts);
   
   const { 
     productGroups, 
@@ -46,14 +57,14 @@ export const useReorderMenu = () => {
     saving: savingGroups,
     handleGroupMove, 
     handleGroupSelect 
-  } = useReorderGroups(activeProduct, fetchComplementGroupsByProduct);
+  } = useReorderGroups(activeProduct, memoizedFetchComplementGroupsByProduct);
   
   const { 
     groupComplements, 
     loadingComplements,
     saving: savingComplements, 
     handleComplementMove 
-  } = useReorderComplements(activeGroup, fetchComplementsByGroup);
+  } = useReorderComplements(activeGroup, memoizedFetchComplementsByGroup);
 
   const loadAllData = useCallback(async () => {
     if (!user) return;
@@ -61,8 +72,8 @@ export const useReorderMenu = () => {
     setLoading(true);
     try {
       await Promise.all([
-        loadCategories(),
-        loadProducts(),
+        memoizedLoadCategories(),
+        memoizedLoadProducts(),
         loadComplementGroups()
       ]);
     } catch (error) {
@@ -71,11 +82,11 @@ export const useReorderMenu = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, loadCategories, loadProducts, loadComplementGroups]);
+  }, [user, memoizedLoadCategories, memoizedLoadProducts, loadComplementGroups]);
 
   useEffect(() => {
     loadAllData();
-  }, [loadAllData]);
+  }, [user?.id]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -114,7 +125,7 @@ export const useReorderMenu = () => {
     activeCategory,
     activeProduct,
     activeGroup,
-    loadingProducts,
+    loadingProducts: false,
     loadingGroups,
     loadingComplements,
     savingCategories,
