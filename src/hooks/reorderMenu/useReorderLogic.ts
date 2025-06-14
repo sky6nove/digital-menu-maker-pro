@@ -10,7 +10,10 @@ export interface ReorderItem {
   isActive?: boolean;
 }
 
-// Helper function to perform atomic swap using temporary values
+// Counter for unique temporary values
+let tempCounter = 0;
+
+// Helper function to perform atomic swap using temporary values and transactions
 const performAtomicSwap = async (
   table: string,
   orderField: string,
@@ -24,8 +27,95 @@ const performAtomicSwap = async (
     item2: { id: item2Id, order: item2Order }
   });
 
-  // Use a unique temporary value to avoid conflicts
-  const tempOrder = -999999 - Date.now();
+  // Generate a safe temporary order value
+  tempCounter++;
+  const tempOrder = -999999 - tempCounter;
+
+  try {
+    // Start transaction by getting a connection
+    const { error: beginError } = await supabase.rpc('begin');
+    if (beginError) {
+      console.error('Error starting transaction:', beginError);
+      throw beginError;
+    }
+
+    // Step 1: Set first item to temporary order
+    const { error: error1 } = await supabase
+      .from(table as any)
+      .update({ [orderField]: tempOrder })
+      .eq('id', item1Id);
+    
+    if (error1) {
+      console.error(`Error setting temp order for item ${item1Id}:`, error1);
+      // Rollback transaction
+      await supabase.rpc('rollback');
+      throw error1;
+    }
+
+    // Step 2: Set second item to first item's original order
+    const { error: error2 } = await supabase
+      .from(table as any)
+      .update({ [orderField]: item1Order })
+      .eq('id', item2Id);
+    
+    if (error2) {
+      console.error(`Error updating item ${item2Id} order:`, error2);
+      // Rollback transaction
+      await supabase.rpc('rollback');
+      throw error2;
+    }
+
+    // Step 3: Set first item to second item's original order
+    const { error: error3 } = await supabase
+      .from(table as any)
+      .update({ [orderField]: item2Order })
+      .eq('id', item1Id);
+    
+    if (error3) {
+      console.error(`Error finalizing item ${item1Id} order:`, error3);
+      // Rollback transaction
+      await supabase.rpc('rollback');
+      throw error3;
+    }
+
+    // Commit transaction
+    const { error: commitError } = await supabase.rpc('commit');
+    if (commitError) {
+      console.error('Error committing transaction:', commitError);
+      throw commitError;
+    }
+
+    console.log(`Atomic swap completed successfully for ${table}`);
+    return true;
+  } catch (error) {
+    console.error(`Atomic swap failed for ${table}:`, error);
+    // Ensure rollback in case of any error
+    try {
+      await supabase.rpc('rollback');
+    } catch (rollbackError) {
+      console.error('Error during rollback:', rollbackError);
+    }
+    throw error;
+  }
+};
+
+// Fallback swap function without transaction for tables that don't support it
+const performSimpleAtomicSwap = async (
+  table: string,
+  orderField: string,
+  item1Id: number,
+  item2Id: number,
+  item1Order: number,
+  item2Order: number
+) => {
+  console.log(`Starting simple atomic swap for ${table}:`, {
+    item1: { id: item1Id, order: item1Order },
+    item2: { id: item2Id, order: item2Order }
+  });
+
+  // Generate a safe temporary order value
+  tempCounter++;
+  const tempOrder = -999999 - tempCounter;
 
   try {
     // Step 1: Set first item to temporary order
@@ -61,10 +151,10 @@ const performAtomicSwap = async (
       throw error3;
     }
 
-    console.log(`Atomic swap completed successfully for ${table}`);
+    console.log(`Simple atomic swap completed successfully for ${table}`);
     return true;
   } catch (error) {
-    console.error(`Atomic swap failed for ${table}:`, error);
+    console.error(`Simple atomic swap failed for ${table}:`, error);
     throw error;
   }
 };
@@ -77,7 +167,7 @@ export const useReorderLogic = () => {
     item2Order: number
   ) => {
     try {
-      await performAtomicSwap(
+      await performSimpleAtomicSwap(
         'categories',
         'order',
         item1Id,
@@ -100,7 +190,7 @@ export const useReorderLogic = () => {
     item2Order: number
   ) => {
     try {
-      await performAtomicSwap(
+      await performSimpleAtomicSwap(
         'products',
         'display_order',
         item1Id,
@@ -123,7 +213,7 @@ export const useReorderLogic = () => {
     item2Order: number
   ) => {
     try {
-      await performAtomicSwap(
+      await performSimpleAtomicSwap(
         'product_complement_groups',
         'order',
         item1Id,
@@ -149,7 +239,7 @@ export const useReorderLogic = () => {
     try {
       const tableName = isSpecific ? 'product_specific_complements' : 'complement_items';
       
-      await performAtomicSwap(
+      await performSimpleAtomicSwap(
         tableName,
         'order',
         item1Id,
@@ -198,6 +288,13 @@ export const useReorderLogic = () => {
     // Validate that orders are different
     if (currentItem.order === targetItem.order) {
       console.error('Items have the same order, cannot swap');
+      return false;
+    }
+
+    // Validate order values are within safe range
+    if (Math.abs(currentItem.order || 0) > 999999999 || Math.abs(targetItem.order || 0) > 999999999) {
+      console.error('Order values are too large for safe swapping');
+      toast.error("Valores de ordem muito grandes para reordenação");
       return false;
     }
 
