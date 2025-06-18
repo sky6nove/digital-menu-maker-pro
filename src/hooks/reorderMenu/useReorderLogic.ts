@@ -1,11 +1,10 @@
-
 import { toast } from "sonner";
 import { useCallback } from "react";
 import { ReorderItem } from "./swapHelpers";
 import { useSwapOperations } from "./swapOperations";
 import { validateReorderInput } from "./reorderValidation";
 
-export { ReorderItem } from "./swapHelpers";
+export type { ReorderItem } from "./swapHelpers";
 
 export const useReorderLogic = () => {
   const {
