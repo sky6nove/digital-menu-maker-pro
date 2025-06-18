@@ -22,11 +22,16 @@ const ComplementGroupPanel: React.FC<ComplementGroupPanelProps> = ({
   handleGroupSelect,
   handleGroupMove
 }) => {
-  // Map groups to ensure we're using the correct ID for operations
-  const mappedGroups = complementGroups.map(group => ({
+  // Map groups for reordering operations (use productGroupId)
+  const mappedGroupsForReorder = complementGroups.map(group => ({
     ...group,
-    id: group.productGroupId || group.id // Use productGroupId as the primary ID for operations
+    id: group.productGroupId || group.id // Use productGroupId as the primary ID for reorder operations
   }));
+
+  // Handle click to select group - pass the productGroupId for internal handling
+  const handleGroupClick = (id: number) => {
+    handleGroupSelect(id);
+  };
 
   return (
     <ReorderPanel 
@@ -35,10 +40,10 @@ const ComplementGroupPanel: React.FC<ComplementGroupPanelProps> = ({
     >
       {activeProduct && (
         <ItemList
-          items={mappedGroups}
+          items={mappedGroupsForReorder}
           onMoveUp={(id) => handleGroupMove(id, 'up')}
           onMoveDown={(id) => handleGroupMove(id, 'down')}
-          onClick={handleGroupSelect}
+          onClick={handleGroupClick}
           selectedId={activeGroup}
           disabled={saving}
         />

@@ -49,9 +49,9 @@ export const useReorderGroups = (
     setSaving(true);
     
     try {
-      // Use productGroupId consistently for both list and reorder operation
+      // Use productGroupId consistently for reorder operation
       const formattedGroups = productGroups.map(group => ({
-        id: group.productGroupId || group.id, // Use productGroupId as the primary ID
+        id: group.productGroupId || group.id, // Use productGroupId as the primary ID for reordering
         name: group.name,
         order: group.order || 0,
         isActive: group.isActive
@@ -62,7 +62,7 @@ export const useReorderGroups = (
 
       const success = await reorderItems(
         formattedGroups,
-        id, // This should now match the productGroupId
+        id, // This should match the productGroupId
         direction,
         'product_complement_groups'
       );
@@ -78,8 +78,22 @@ export const useReorderGroups = (
   }, [productGroups, activeProduct, reorderItems, loadProductGroups, saving]);
 
   const handleGroupSelect = useCallback((groupId: number) => {
-    setActiveGroup(activeGroup === groupId ? null : groupId);
-  }, [activeGroup]);
+    // Find the group to get the correct complement_group_id for loading complements
+    const selectedGroup = productGroups.find(group => 
+      (group.productGroupId || group.id) === groupId
+    );
+    
+    // Use the complement_group_id (the original group ID) for activeGroup
+    const complementGroupId = selectedGroup ? selectedGroup.id : groupId;
+    
+    console.log("Group selection:", { 
+      clickedId: groupId, 
+      complementGroupId, 
+      selectedGroup 
+    });
+    
+    setActiveGroup(activeGroup === complementGroupId ? null : complementGroupId);
+  }, [activeGroup, productGroups]);
 
   return {
     productGroups,
