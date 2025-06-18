@@ -22,6 +22,12 @@ const ComplementGroupPanel: React.FC<ComplementGroupPanelProps> = ({
   handleGroupSelect,
   handleGroupMove
 }) => {
+  // Map groups to ensure we're using the correct ID for operations
+  const mappedGroups = complementGroups.map(group => ({
+    ...group,
+    id: group.productGroupId || group.id // Use productGroupId as the primary ID for operations
+  }));
+
   return (
     <ReorderPanel 
       title={`Grupos de complementos${productName ? ` - ${productName}` : ''}`}
@@ -29,7 +35,7 @@ const ComplementGroupPanel: React.FC<ComplementGroupPanelProps> = ({
     >
       {activeProduct && (
         <ItemList
-          items={complementGroups}
+          items={mappedGroups}
           onMoveUp={(id) => handleGroupMove(id, 'up')}
           onMoveDown={(id) => handleGroupMove(id, 'down')}
           onClick={handleGroupSelect}

@@ -49,16 +49,20 @@ export const useReorderGroups = (
     setSaving(true);
     
     try {
+      // Use productGroupId consistently for both list and reorder operation
       const formattedGroups = productGroups.map(group => ({
-        id: group.productGroupId || group.id,
+        id: group.productGroupId || group.id, // Use productGroupId as the primary ID
         name: group.name,
         order: group.order || 0,
         isActive: group.isActive
       }));
 
+      console.log("Formatted groups for reordering:", formattedGroups);
+      console.log("Moving group with ID:", id);
+
       const success = await reorderItems(
         formattedGroups,
-        id,
+        id, // This should now match the productGroupId
         direction,
         'product_complement_groups'
       );

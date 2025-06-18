@@ -13,11 +13,19 @@ export const validateReorderInput = (
     return { isValid: false };
   }
 
+  console.log('Validating reorder input:', {
+    itemsCount: items.length,
+    itemId,
+    direction,
+    itemIds: items.map(item => ({ id: item.id, name: item.name, order: item.order }))
+  });
+
   const sortedItems = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
   const currentIndex = sortedItems.findIndex(item => item.id === itemId);
   
   if (currentIndex === -1) {
     console.error(`Item with id ${itemId} not found in items list`);
+    console.error('Available items:', sortedItems.map(item => ({ id: item.id, name: item.name })));
     return { isValid: false };
   }
   
@@ -29,6 +37,8 @@ export const validateReorderInput = (
   
   const currentItem = sortedItems[currentIndex];
   const targetItem = sortedItems[targetIndex];
+  
+  console.log(`Validation successful - moving item ${currentItem.id} (${currentItem.name}) ${direction} with item ${targetItem.id} (${targetItem.name})`);
   
   // Validate that orders are different
   if (currentItem.order === targetItem.order) {
