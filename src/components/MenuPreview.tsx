@@ -27,20 +27,12 @@ const MenuPreview = ({
   const { toast } = useToast();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<number, boolean>>({});
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
 
   // Filter active items
   const activeCategories = categories.filter((cat) => cat.isActive);
   const activeProducts = products.filter((prod) => prod.isActive);
-
-  const toggleDescription = (productId: number) => {
-    setExpandedDescriptions({
-      ...expandedDescriptions,
-      [productId]: !expandedDescriptions[productId],
-    });
-  };
 
   const openProductDialog = (product: Product) => {
     setSelectedProduct(product);
@@ -241,14 +233,26 @@ const MenuPreview = ({
     }
   };
 
+  // Get placeholder image for category
+  const getCategoryPlaceholder = (categoryName: string) => {
+    return `https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=200&fit=crop&crop=center`;
+  };
+
+  // Get placeholder image for product
+  const getProductPlaceholder = (productName: string) => {
+    return `https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&h=120&fit=crop&crop=center`;
+  };
+
   return (
-    <div className="min-h-screen bg-menu-background text-menu-foreground pb-32">
-      <div className="container max-w-4xl mx-auto px-4 py-6">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-menu-accent mb-2">{menuName}</h1>
-          <p className="text-menu-foreground opacity-75">{slogan}</p>
+    <div className="min-h-screen bg-gray-50 text-gray-900 pb-32">
+      <div className="container max-w-6xl mx-auto px-4 py-6">
+        {/* Header do Menu */}
+        <div className="text-center mb-8 bg-white rounded-lg shadow-sm p-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{menuName}</h1>
+          <p className="text-lg text-gray-600">{slogan}</p>
         </div>
 
+        {/* Categorias e Produtos */}
         {activeCategories.map((category) => {
           const categoryProducts = activeProducts.filter(
             (product) => product.categoryId === category.id
@@ -257,48 +261,66 @@ const MenuPreview = ({
           if (categoryProducts.length === 0) return null;
 
           return (
-            <div key={category.id} className="mb-10">
-              <h2 className="text-2xl font-bold text-menu-accent mb-4 pb-2 border-b border-menu-accent">
-                {category.name}
-              </h2>
+            <div key={category.id} className="mb-12">
+              {/* Header da Categoria com Imagem */}
+              <div 
+                className="relative h-48 rounded-lg overflow-hidden mb-6 bg-cover bg-center"
+                style={{
+                  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${getCategoryPlaceholder(category.name)})`
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <h2 className="text-4xl font-bold text-white text-center px-4">
+                    {category.name}
+                  </h2>
+                </div>
+              </div>
 
-              <div className="space-y-4">
+              {/* Grid de Produtos */}
+              <div className="grid gap-4">
                 {categoryProducts.map((product) => (
-                  <Card key={product.id} className="bg-menu-card border-none shadow-md">
-                    <CardContent className="p-4">
-                      <div 
-                        className="flex justify-between items-center cursor-pointer" 
-                        onClick={() => toggleDescription(product.id)}
-                      >
-                        <h3 className="text-xl font-semibold text-menu-foreground">
-                          {product.name}
-                        </h3>
-                        <span className="text-lg font-medium text-menu-accent">
-                          R$ {formatPrice(product.price)}
-                        </span>
-                      </div>
-
-                      {product.description && (
-                        <div
-                          className={`mt-2 text-menu-foreground opacity-75 text-sm overflow-hidden transition-all duration-300 ${
-                            expandedDescriptions[product.id] ? "max-h-24" : "max-h-0"
-                          }`}
-                        >
-                          {product.description}
+                  <Card 
+                    key={product.id} 
+                    className="bg-white border-none shadow-sm hover:shadow-md transition-shadow duration-200"
+                  >
+                    <CardContent className="p-0">
+                      <div className="flex items-stretch">
+                        {/* Imagem do Produto */}
+                        <div className="w-32 h-32 flex-shrink-0">
+                          <img
+                            src={product.image_url || getProductPlaceholder(product.name)}
+                            alt={product.name}
+                            className="w-full h-full object-cover rounded-l-lg"
+                          />
                         </div>
-                      )}
 
-                      <div className="mt-3 flex justify-end">
-                        <Button 
-                          className="bg-menu-accent hover:bg-opacity-80 text-black"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openProductDialog(product);
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-1" /> Adicionar
-                        </Button>
+                        {/* Informações do Produto */}
+                        <div className="flex-1 p-4 flex flex-col justify-between">
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                              {product.name}
+                            </h3>
+                            
+                            {product.description && (
+                              <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                                {product.description}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="text-2xl font-bold text-green-600">
+                              R$ {formatPrice(product.price)}
+                            </div>
+                            
+                            <Button 
+                              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-medium"
+                              onClick={() => openProductDialog(product)}
+                            >
+                              Pedir
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -311,19 +333,19 @@ const MenuPreview = ({
 
       {/* Restaurant Footer */}
       {(whatsappNumber || restaurantAddress) && (
-        <div className="fixed bottom-[50px] left-0 w-full bg-menu-card border-t border-gray-700 py-2 px-4 text-center text-sm text-gray-300">
+        <div className="fixed bottom-[80px] left-0 w-full bg-white border-t border-gray-200 py-3 px-4 text-center text-sm text-gray-600 shadow-lg">
           {restaurantAddress && (
             <p className="flex items-center justify-center mb-1">
-              <MapPin className="h-4 w-4 mr-1 text-menu-accent" />
+              <MapPin className="h-4 w-4 mr-1 text-gray-500" />
               {restaurantAddress}
             </p>
           )}
           {whatsappNumber && (
             <p className="flex items-center justify-center">
-              <Phone className="h-4 w-4 mr-1 text-menu-accent" />
+              <Phone className="h-4 w-4 mr-1 text-green-600" />
               <a 
                 href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`} 
-                className="text-menu-accent hover:underline"
+                className="text-green-600 hover:underline font-medium"
                 target="_blank" 
                 rel="noopener noreferrer"
               >
@@ -336,40 +358,46 @@ const MenuPreview = ({
 
       {/* Fixed Cart */}
       <div
-        className={`fixed bottom-0 left-0 w-full bg-menu-card border-t border-menu-accent transition-all duration-300 ${
-          cartOpen ? "max-h-[60vh] overflow-y-auto" : "max-h-[56px]"
+        className={`fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg transition-all duration-300 ${
+          cartOpen ? "max-h-[60vh] overflow-y-auto" : "max-h-[80px]"
         }`}
       >
         <div
-          className="flex justify-between items-center p-4 bg-menu-accent text-black cursor-pointer"
+          className="flex justify-between items-center p-4 bg-red-500 text-white cursor-pointer hover:bg-red-600 transition-colors"
           onClick={() => setCartOpen(!cartOpen)}
         >
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
-            <span className="font-bold">Carrinho</span>
-            <span>({cart.reduce((acc, item) => acc + item.quantity, 0)})</span>
+          <div className="flex items-center gap-3">
+            <ShoppingCart className="h-6 w-6" />
+            <span className="font-bold text-lg">Carrinho</span>
+            <span className="bg-red-600 text-white px-2 py-1 rounded-full text-sm">
+              {cart.reduce((acc, item) => acc + item.quantity, 0)}
+            </span>
           </div>
-          <span className="font-bold">R$ {formatPrice(getTotalPrice())}</span>
+          <span className="font-bold text-xl">R$ {formatPrice(getTotalPrice())}</span>
         </div>
 
         <div className="p-4">
           {cart.length > 0 ? (
             <>
-              <div className="space-y-3 mb-4">
+              <div className="space-y-4 mb-4">
                 {cart.map((item, index) => (
-                  <div key={`${item.id}-${index}`} className="py-2 border-b border-gray-700">
-                    <div className="flex justify-between items-center mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{item.quantity}x</span>
-                        <span>{item.name}</span>
+                  <div key={`${item.id}-${index}`} className="py-3 border-b border-gray-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-lg bg-gray-100 px-2 py-1 rounded">
+                          {item.quantity}x
+                        </span>
+                        <span className="font-medium">{item.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span>R$ {formatPrice(item.price * item.quantity)}</span>
-                        <div className="flex gap-1">
+                        <span className="font-bold text-green-600">
+                          R$ {formatPrice(item.price * item.quantity)}
+                        </span>
+                        <div className="flex gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 w-7 p-0 border-menu-accent text-menu-accent"
+                            className="h-8 w-8 p-0 border-red-500 text-red-500 hover:bg-red-50"
                             onClick={() => removeFromCart(index)}
                           >
                             <X className="h-4 w-4" />
@@ -377,7 +405,7 @@ const MenuPreview = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 w-7 p-0 border-menu-accent text-menu-accent"
+                            className="h-8 w-8 p-0 border-green-500 text-green-500 hover:bg-green-50"
                             onClick={() => {
                               const updatedCart = [...cart];
                               updatedCart[index].quantity += 1;
@@ -392,7 +420,7 @@ const MenuPreview = ({
                     
                     {/* Show complements */}
                     {item.complements && item.complements.length > 0 && (
-                      <div className="ml-6 mt-1 text-sm text-gray-400">
+                      <div className="ml-8 mt-2 text-sm text-gray-500">
                         {item.complements.map((comp, compIndex) => (
                           <div key={`${comp.id}-${compIndex}`} className="flex justify-between">
                             <span>{comp.quantity}x {comp.name}</span>
@@ -407,23 +435,34 @@ const MenuPreview = ({
                 ))}
               </div>
 
-              <div className="flex justify-between items-center py-2 mb-4 border-t border-menu-accent">
-                <span className="font-bold text-lg">Total:</span>
-                <span className="font-bold text-lg">R$ {formatPrice(getTotalPrice())}</span>
+              <div className="flex justify-between items-center py-4 mb-4 border-t-2 border-gray-200">
+                <span className="font-bold text-xl">Total:</span>
+                <span className="font-bold text-2xl text-green-600">
+                  R$ {formatPrice(getTotalPrice())}
+                </span>
               </div>
 
               <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={clearCart} className="border-red-500 text-red-500">
+                <Button 
+                  variant="outline" 
+                  onClick={clearCart} 
+                  className="border-red-500 text-red-500 hover:bg-red-50 px-6 py-3"
+                >
                   Limpar
                 </Button>
-                <Button onClick={finishOrder} className="bg-menu-accent text-black">
+                <Button 
+                  onClick={finishOrder} 
+                  className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 text-lg font-medium"
+                >
                   Finalizar Pedido
                 </Button>
               </div>
             </>
           ) : (
-            <div className="text-center py-6 text-gray-400">
-              Seu carrinho está vazio
+            <div className="text-center py-8 text-gray-500">
+              <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p className="text-lg">Seu carrinho está vazio</p>
+              <p className="text-sm">Adicione produtos para começar seu pedido</p>
             </div>
           )}
         </div>
