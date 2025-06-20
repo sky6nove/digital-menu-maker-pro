@@ -1,4 +1,3 @@
-
 import { Category } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,7 +11,8 @@ export const CategoryService = {
       const { data: categoriesData, error: categoriesError } = await supabase
         .from("categories")
         .select("*")
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .order("order", { ascending: true }); // Add ordering by order field
       
       if (categoriesError) throw categoriesError;
       
@@ -33,9 +33,7 @@ export const CategoryService = {
         };
       });
       
-      // Sort by order
-      formattedCategories.sort((a, b) => a.order - b.order);
-      
+      // Categories are already sorted by the query, no need to sort again
       return formattedCategories;
     } catch (error: any) {
       console.error("Error loading categories:", error);

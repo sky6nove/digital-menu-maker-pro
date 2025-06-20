@@ -41,7 +41,7 @@ const Menu = () => {
         setRestaurantAddress(profileData.restaurant_address || "");
       }
       
-      // Load categories
+      // Load categories with proper ordering
       const { data: categoriesData, error: categoriesError } = await supabase
         .from("categories")
         .select("*")
@@ -50,7 +50,7 @@ const Menu = () => {
       
       if (categoriesError) throw categoriesError;
       
-      // Load products with all needed data
+      // Load products with proper ordering and all needed data
       const { data: productsData, error: productsError } = await supabase
         .from("products")
         .select(`
@@ -61,7 +61,8 @@ const Menu = () => {
             is_required
           )
         `)
-        .eq("user_id", user?.id);
+        .eq("user_id", user?.id)
+        .order('display_order', { ascending: true, nullsLast: true }); // Add proper ordering
       
       if (productsError) throw productsError;
       
@@ -94,11 +95,16 @@ const Menu = () => {
         portionSize: prod.portion_size,
         servesCount: prod.serves_count,
         hasStockControl: prod.has_stock_control || false,
-        stockQuantity: prod.stock_quantity
+        stockQuantity: prod.stock_quantity,
+        display_order: prod.display_order
       }));
       
       setCategories(formattedCategories);
       setProducts(formattedProducts);
+
+      console.log("Loaded categories with ordering:", formattedCategories.map(c => ({ id: c.id, name: c.name, order: c.order })));
+      console.log("Loaded products with ordering:", formattedProducts.map(p => ({ id: p.id, name: p.name, display_order: p.display_order, categoryId: p.categoryId })));
+      console.log("Products with complement groups:", productsData.filter(p => p.product_complement_groups?.length > 0).map(p => ({ name: p.name, groups: p.product_complement_groups })));
     } catch (error: any) {
       toast.error("Erro ao carregar dados do menu");
       console.error("Error loading menu data:", error);

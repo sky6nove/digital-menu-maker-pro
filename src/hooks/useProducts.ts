@@ -18,7 +18,8 @@ export const useProducts = (userId?: string) => {
       const { data: productsData, error: productsError } = await supabase
         .from("products")
         .select("*")
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .order("display_order", { ascending: true, nullsLast: true }); // Add ordering by display_order
       
       if (productsError) throw productsError;
       

@@ -74,6 +74,28 @@ const Dashboard = () => {
     navigate('/reorder-menu');
   };
 
+  // Helper function to get products for a category, sorted by display_order
+  const getProductsForCategory = (categoryId: number) => {
+    return products
+      .filter(p => p.categoryId === categoryId)
+      .sort((a, b) => {
+        const orderA = a.display_order ?? 999999;
+        const orderB = b.display_order ?? 999999;
+        return orderA - orderB;
+      });
+  };
+
+  // Helper function to get products without category, sorted by display_order
+  const getProductsWithoutCategory = () => {
+    return products
+      .filter(p => !p.categoryId)
+      .sort((a, b) => {
+        const orderA = a.display_order ?? 999999;
+        const orderB = b.display_order ?? 999999;
+        return orderA - orderB;
+      });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -128,58 +150,59 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="border rounded-md">
-                {categories.map((category) => (
-                  <div key={category.id} className="border-b last:border-b-0">
-                    <div className="flex items-center justify-between p-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium ${category.isActive ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
-                          {category.name}
-                        </span>
-                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                          {products.filter(p => p.categoryId === category.id).length} produtos
-                        </span>
+                {categories.map((category) => {
+                  const categoryProducts = getProductsForCategory(category.id);
+                  
+                  return (
+                    <div key={category.id} className="border-b last:border-b-0">
+                      <div className="flex items-center justify-between p-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium ${category.isActive ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
+                            {category.name}
+                          </span>
+                          <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                            {categoryProducts.length} produtos
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => moveUp(category.id)}
+                            disabled={categories.indexOf(category) === 0}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => moveDown(category.id)}
+                            disabled={categories.indexOf(category) === categories.length - 1}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleEditCategory(category)}
+                          >
+                            Editar
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteCategory(category.id, products)}
+                          >
+                            Excluir
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => moveUp(category.id)}
-                          disabled={categories.indexOf(category) === 0}
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => moveDown(category.id)}
-                          disabled={categories.indexOf(category) === categories.length - 1}
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleEditCategory(category)}
-                        >
-                          Editar
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteCategory(category.id, products)}
-                        >
-                          Excluir
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Show products in this category */}
-                    <div className="bg-muted/30 border-t">
-                      {products.filter(p => p.categoryId === category.id).length > 0 ? (
-                        products
-                          .filter(p => p.categoryId === category.id)
-                          .map(product => (
+                      
+                      {/* Show products in this category with proper ordering */}
+                      <div className="bg-muted/30 border-t">
+                        {categoryProducts.length > 0 ? (
+                          categoryProducts.map(product => (
                             <div key={product.id} className="pl-6 pr-3 py-2 border-b last:border-b-0 flex justify-between items-center">
                               <div className="flex items-center gap-2">
                                 <span className={`${product.isActive ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
@@ -208,29 +231,30 @@ const Dashboard = () => {
                               </div>
                             </div>
                           ))
-                      ) : (
-                        <div className="pl-6 pr-3 py-2 text-muted-foreground text-sm italic">
-                          Nenhum produto nesta categoria
+                        ) : (
+                          <div className="pl-6 pr-3 py-2 text-muted-foreground text-sm italic">
+                            Nenhum produto nesta categoria
+                          </div>
+                        )}
+                        <div className="pl-6 pr-3 py-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary"
+                            onClick={() => {
+                              navigate('/product/new', { 
+                                state: { defaultCategoryId: category.id } 
+                              });
+                            }}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Adicionar produto nesta categoria
+                          </Button>
                         </div>
-                      )}
-                      <div className="pl-6 pr-3 py-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary"
-                          onClick={() => {
-                            navigate('/product/new', { 
-                              state: { defaultCategoryId: category.id } 
-                            });
-                          }}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Adicionar produto nesta categoria
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 
                 {categories.length === 0 && (
                   <div className="p-4 text-center text-muted-foreground">
@@ -242,7 +266,7 @@ const Dashboard = () => {
           </Card>
           
           {/* Products without category */}
-          {products.filter(p => !p.categoryId).length > 0 && (
+          {getProductsWithoutCategory().length > 0 && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle>Produtos sem categoria</CardTitle>
@@ -250,37 +274,35 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="border rounded-md">
-                  {products
-                    .filter(p => !p.categoryId)
-                    .map(product => (
-                      <div key={product.id} className="p-3 border-b last:border-b-0 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <span className={`${product.isActive ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
-                            {product.name}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            R$ {product.price.toFixed(2).replace('.', ',')}
-                          </span>
-                        </div>
-                        <div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleEditProduct(product.id)}
-                          >
-                            Editar
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteProduct(product.id)}
-                          >
-                            Excluir
-                          </Button>
-                        </div>
+                  {getProductsWithoutCategory().map(product => (
+                    <div key={product.id} className="p-3 border-b last:border-b-0 flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className={`${product.isActive ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
+                          {product.name}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          R$ {product.price.toFixed(2).replace('.', ',')}
+                        </span>
                       </div>
-                    ))}
+                      <div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditProduct(product.id)}
+                        >
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
