@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Product, ProductSize } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +18,7 @@ export const useProducts = (userId?: string) => {
         .from("products")
         .select("*")
         .eq("user_id", userId)
-        .order("display_order", { ascending: true, nullsLast: true }); // Add ordering by display_order
+        .order("display_order", { ascending: true, nullsFirst: false }); // Fix: use nullsFirst instead of nullsLast
       
       if (productsError) throw productsError;
       

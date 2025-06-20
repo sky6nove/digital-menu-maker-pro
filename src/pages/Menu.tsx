@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Product, Category } from "@/types";
 import MenuPreview from "@/components/MenuPreview";
@@ -62,7 +61,7 @@ const Menu = () => {
           )
         `)
         .eq("user_id", user?.id)
-        .order('display_order', { ascending: true, nullsLast: true }); // Add proper ordering
+        .order('display_order', { ascending: true, nullsFirst: false }); // Fix: use nullsFirst instead of nullsLast
       
       if (productsError) throw productsError;
       
