@@ -61,7 +61,7 @@ const Menu = () => {
           )
         `)
         .eq("user_id", user?.id)
-        .order('display_order', { ascending: true, nullsFirst: false }); // Fix: use nullsFirst instead of nullsLast
+        .order('display_order', { ascending: true, nullsFirst: false });
       
       if (productsError) throw productsError;
       
@@ -78,32 +78,33 @@ const Menu = () => {
         portionsLabel: cat.portions_label || 'Serve'
       }));
       
-      const formattedProducts: Product[] = productsData.map(prod => ({
-        id: prod.id,
-        name: prod.name,
-        description: prod.description || "",
-        price: prod.price,
-        categoryId: prod.category_id || 0,
-        isActive: prod.is_active,
-        image_url: prod.image_url,
-        allow_half_half: prod.allow_half_half || false,
-        half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
-        pdvCode: prod.pdv_code,
-        productTypeId: prod.product_type_id,
-        dietaryRestrictions: prod.dietary_restrictions,
-        portionSize: prod.portion_size,
-        servesCount: prod.serves_count,
-        hasStockControl: prod.has_stock_control || false,
-        stockQuantity: prod.stock_quantity,
-        display_order: prod.display_order
-      }));
+      const formattedProducts: Product[] = productsData.map(prod => {
+        console.log(`Product ${prod.name} image URL:`, prod.image_url);
+        return {
+          id: prod.id,
+          name: prod.name,
+          description: prod.description || "",
+          price: prod.price,
+          categoryId: prod.category_id || 0,
+          isActive: prod.is_active,
+          image_url: prod.image_url,
+          allow_half_half: prod.allow_half_half || false,
+          half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
+          pdvCode: prod.pdv_code,
+          productTypeId: prod.product_type_id,
+          dietaryRestrictions: prod.dietary_restrictions,
+          portionSize: prod.portion_size,
+          servesCount: prod.serves_count,
+          hasStockControl: prod.has_stock_control || false,
+          stockQuantity: prod.stock_quantity,
+          display_order: prod.display_order
+        };
+      });
       
       setCategories(formattedCategories);
       setProducts(formattedProducts);
 
-      console.log("Loaded categories with ordering:", formattedCategories.map(c => ({ id: c.id, name: c.name, order: c.order })));
-      console.log("Loaded products with ordering:", formattedProducts.map(p => ({ id: p.id, name: p.name, display_order: p.display_order, categoryId: p.categoryId })));
-      console.log("Products with complement groups:", productsData.filter(p => p.product_complement_groups?.length > 0).map(p => ({ name: p.name, groups: p.product_complement_groups })));
+      console.log("Loaded products with images:", formattedProducts.filter(p => p.image_url).map(p => ({ name: p.name, image_url: p.image_url })));
     } catch (error: any) {
       toast.error("Erro ao carregar dados do menu");
       console.error("Error loading menu data:", error);

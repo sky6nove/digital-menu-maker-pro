@@ -17,6 +17,11 @@ export const useProductFormSubmit = (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("Submitting product data:", {
+      ...formData,
+      image_url: formData.image_url
+    });
+    
     // Validate form
     if (!formData.name.trim()) {
       toast({
@@ -38,7 +43,18 @@ export const useProductFormSubmit = (
     
     setLoading(true);
     try {
+      // Log the image URL being submitted
+      if (formData.image_url) {
+        console.log("Submitting with image URL:", formData.image_url);
+      }
+      
       await onSubmit(formData);
+      
+      toast({
+        title: "Sucesso",
+        description: product?.id ? "Produto atualizado com sucesso" : "Produto criado com sucesso",
+      });
+      
     } catch (error) {
       console.error("Error saving product:", error);
       toast({

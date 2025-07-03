@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Image as ImageIcon, Link, Loader2 } from "lucide-react";
+import { Image as ImageIcon, Link, Loader2, RefreshCw } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -21,6 +21,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
   const [imageUrl, setImageUrl] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [activeTab, setActiveTab] = useState<string>("upload");
+  const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Initialize with current image URL if provided
@@ -30,6 +31,59 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       setImageUrlInput(currentImageUrl);
     }
   }, [currentImageUrl]);
+
+  const uploadFileWithRetry = async (file: File, attempt = 0): Promise<string> => {
+    const maxRetries = 3;
+    
+    try {
+      // Generate unique filename
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
+      
+      console.log(`Upload attempt ${attempt + 1} for file: ${fileName}`);
+      
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error("Upload error:", error);
+        throw error;
+      }
+
+      console.log("Upload successful:", data);
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(data.path);
+
+      console.log("Public URL generated:", publicUrl);
+      
+      // Verify the URL is accessible
+      const testResponse = await fetch(publicUrl, { method: 'HEAD' });
+      if (!testResponse.ok) {
+        throw new Error(`URL not accessible: ${testResponse.status}`);
+      }
+
+      return publicUrl;
+      
+    } catch (error: any) {
+      console.error(`Upload attempt ${attempt + 1} failed:`, error);
+      
+      if (attempt < maxRetries - 1) {
+        console.log(`Retrying upload... (${attempt + 2}/${maxRetries})`);
+        setRetryCount(attempt + 1);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+        return uploadFileWithRetry(file, attempt + 1);
+      } else {
+        throw new Error(`Upload failed after ${maxRetries} attempts: ${error.message}`);
+      }
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -59,19 +113,9 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
     try {
       setUploading(true);
+      setRetryCount(0);
 
-      // Upload file to Supabase Storage
-      const fileName = `${Date.now()}-${file.name}`;
-      const { data, error } = await supabase.storage
-        .from("product-images")
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("product-images").getPublicUrl(data.path);
+      const publicUrl = await uploadFileWithRetry(file);
 
       setImageUrl(publicUrl);
       setImageUrlInput(publicUrl);
@@ -81,6 +125,12 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         title: "Upload concluído",
         description: "A imagem foi carregada com sucesso.",
       });
+      
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
     } catch (error: any) {
       console.error("Error uploading file:", error);
       toast({
@@ -90,6 +140,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       });
     } finally {
       setUploading(false);
+      setRetryCount(0);
     }
   };
 
@@ -117,6 +168,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       return;
     }
     
+    console.log("Setting image URL:", imageUrlInput);
     setImageUrl(imageUrlInput);
     onUploadComplete(imageUrlInput);
     
@@ -124,6 +176,16 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       title: "URL definida",
       description: "A URL da imagem foi definida com sucesso.",
     });
+  };
+
+  const refreshImage = () => {
+    if (imageUrl) {
+      // Force refresh by adding timestamp
+      const refreshUrl = imageUrl.includes('?') 
+        ? `${imageUrl}&t=${Date.now()}` 
+        : `${imageUrl}?t=${Date.now()}`;
+      setImageUrl(refreshUrl);
+    }
   };
 
   return (
@@ -157,7 +219,10 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
             {uploading && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Enviando imagem...</span>
+                <span>
+                  Enviando imagem...
+                  {retryCount > 0 && ` (Tentativa ${retryCount + 1})`}
+                </span>
               </div>
             )}
           </div>
@@ -188,18 +253,34 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
       {imageUrl && (
         <div className="mt-4">
-          <Label>Pré-visualização</Label>
+          <div className="flex items-center justify-between mb-2">
+            <Label>Pré-visualização</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={refreshImage}
+              className="h-8 px-2"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          </div>
           <div className="mt-2 border rounded-md p-2 bg-muted/30">
             <img
               src={imageUrl}
               alt="Preview"
               className="mx-auto max-h-48 object-contain"
-              onError={() => {
+              key={imageUrl} // Force re-render when URL changes
+              onError={(e) => {
+                console.error("Error loading image:", imageUrl);
                 toast({
                   title: "Erro ao carregar imagem",
                   description: "Não foi possível carregar a imagem. Verifique a URL.",
                   variant: "destructive",
                 });
+              }}
+              onLoad={() => {
+                console.log("Image loaded successfully:", imageUrl);
               }}
             />
           </div>

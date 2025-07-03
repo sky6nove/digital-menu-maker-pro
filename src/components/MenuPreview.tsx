@@ -242,6 +242,16 @@ const MenuPreview = ({
     return `https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&h=120&fit=crop&crop=center`;
   };
 
+  const getProductImage = (product: Product) => {
+    console.log(`Getting image for product ${product.name}:`, product.image_url);
+    
+    if (product.image_url && product.image_url.trim()) {
+      return product.image_url;
+    }
+    
+    return getProductPlaceholder(product.name);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 pb-32">
       <div className="container max-w-6xl mx-auto px-4 py-6">
@@ -287,9 +297,18 @@ const MenuPreview = ({
                         {/* Imagem do Produto */}
                         <div className="w-32 h-32 flex-shrink-0">
                           <img
-                            src={product.image_url || getProductPlaceholder(product.name)}
+                            src={getProductImage(product)}
                             alt={product.name}
                             className="w-full h-full object-cover rounded-l-lg"
+                            onError={(e) => {
+                              console.error(`Failed to load image for ${product.name}:`, product.image_url);
+                              // Fallback to placeholder if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.src = getProductPlaceholder(product.name);
+                            }}
+                            onLoad={() => {
+                              console.log(`Successfully loaded image for ${product.name}:`, product.image_url);
+                            }}
                           />
                         </div>
 
