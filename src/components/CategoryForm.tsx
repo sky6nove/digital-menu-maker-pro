@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import FileUploader from "@/components/FileUploader";
 
 interface CategoryFormProps {
   category?: Category;
@@ -30,6 +31,7 @@ const CategoryForm = ({ category, onSubmit, onCancel }: CategoryFormProps) => {
     categoryType: category?.categoryType || "regular",
     hasPortions: category?.hasPortions || false,
     portionsLabel: category?.portionsLabel || "Serve",
+    image_url: category?.image_url || "",
   });
 
   const isEditing = !!category;
@@ -64,6 +66,10 @@ const CategoryForm = ({ category, onSubmit, onCancel }: CategoryFormProps) => {
     setFormData({ ...formData, halfHalfPriceRule: value as 'lowest' | 'highest' | 'average' });
   };
 
+  const handleImageUpload = (url: string) => {
+    setFormData({ ...formData, image_url: url });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -88,10 +94,11 @@ const CategoryForm = ({ category, onSubmit, onCancel }: CategoryFormProps) => {
       <form onSubmit={handleSubmit}>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mx-6">
-            <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
-            <TabsTrigger value="advanced">Opções Avançadas</TabsTrigger>
+            <TabsTrigger value="basic">Básico</TabsTrigger>
+            <TabsTrigger value="images">Imagens</TabsTrigger>
+            <TabsTrigger value="advanced">Avançado</TabsTrigger>
             {formData.categoryType === "pizza" && (
-              <TabsTrigger value="pizza">Opções de Pizza</TabsTrigger>
+              <TabsTrigger value="pizza">Pizza</TabsTrigger>
             )}
           </TabsList>
           
@@ -132,6 +139,16 @@ const CategoryForm = ({ category, onSubmit, onCancel }: CategoryFormProps) => {
                   onCheckedChange={handleStatusChange}
                 />
                 <Label htmlFor="isActive">Categoria ativa</Label>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="images" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>Imagem da Categoria</Label>
+                <FileUploader 
+                  onUploadComplete={handleImageUpload}
+                  currentImageUrl={formData.image_url}
+                />
               </div>
             </TabsContent>
 

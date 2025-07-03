@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Product, Category, CartItem, ComplementItem, CartItemComplement } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -233,9 +232,9 @@ const MenuPreview = ({
     }
   };
 
-  // Get placeholder image for category
-  const getCategoryPlaceholder = (categoryName: string) => {
-    return `https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=200&fit=crop&crop=center`;
+  // Get placeholder image for category - now uses category's image_url if available
+  const getCategoryImage = (category: Category) => {
+    return category.image_url || `https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=200&fit=crop&crop=center`;
   };
 
   // Get placeholder image for product
@@ -266,7 +265,7 @@ const MenuPreview = ({
               <div 
                 className="relative h-48 rounded-lg overflow-hidden mb-6 bg-cover bg-center"
                 style={{
-                  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${getCategoryPlaceholder(category.name)})`
+                  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${getCategoryImage(category)})`
                 }}
               >
                 <div className="absolute inset-0 flex items-center justify-center">

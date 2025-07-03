@@ -29,7 +29,8 @@ export const CategoryService = {
           // Cast categoryType to the proper union type
           categoryType: (cat.category_type === 'pizza' ? 'pizza' : 'regular') as 'regular' | 'pizza',
           hasPortions: cat.has_portions === true,
-          portionsLabel: cat.portions_label || 'Serve'
+          portionsLabel: cat.portions_label || 'Serve',
+          image_url: cat.image_url || ""
         };
       });
       
@@ -59,6 +60,7 @@ export const CategoryService = {
           category_type: categoryData.categoryType,
           has_portions: categoryData.hasPortions,
           portions_label: categoryData.portionsLabel || null,
+          image_url: categoryData.image_url || null,
           updated_at: new Date().toISOString()
         })
         .eq("id", categoryData.id)
@@ -96,6 +98,7 @@ export const CategoryService = {
           category_type: categoryData.categoryType,
           has_portions: categoryData.hasPortions,
           portions_label: categoryData.portionsLabel || null,
+          image_url: categoryData.image_url || null,
           user_id: userId
         });
         

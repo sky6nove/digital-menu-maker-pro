@@ -17,6 +17,7 @@ export type Database = {
           half_half_price_rule: string | null
           has_portions: boolean | null
           id: number
+          image_url: string | null
           is_active: boolean
           name: string
           order: number | null
@@ -31,6 +32,7 @@ export type Database = {
           half_half_price_rule?: string | null
           has_portions?: boolean | null
           id?: number
+          image_url?: string | null
           is_active?: boolean
           name: string
           order?: number | null
@@ -45,6 +47,7 @@ export type Database = {
           half_half_price_rule?: string | null
           has_portions?: boolean | null
           id?: number
+          image_url?: string | null
           is_active?: boolean
           name?: string
           order?: number | null

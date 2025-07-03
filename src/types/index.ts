@@ -28,6 +28,7 @@ export interface Category {
   categoryType: 'regular' | 'pizza';
   hasPortions?: boolean;
   portionsLabel?: string;
+  image_url?: string;
 }
 
 export interface CartItem {
