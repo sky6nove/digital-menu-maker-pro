@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { useProductComplementGroups } from "@/hooks/useProductComplementGroups";
+import { useProductComplementGroups } from "@/hooks/productComplements/useProductComplementGroups";
 import ProductComplementGroups from "@/components/ProductComplementGroups";
 
 interface ComplementGroupsTabProps {
@@ -26,7 +26,7 @@ const ComplementGroupsTab = ({
 
   // Update parent component when selected groups change
   useEffect(() => {
-    const groupIds = selectedGroups.map(group => group.complement_group_id);
+    const groupIds = selectedGroups.map(group => group.complementGroupId);
     onChange(groupIds);
   }, [selectedGroups, onChange]);
 
