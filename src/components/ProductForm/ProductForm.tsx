@@ -36,10 +36,7 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
     handleSizeChange,
     handleComplementsChange,
     handleComplementGroupsChange,
-    setFormData,
-    setSizes,
-    setComplements,
-    setComplementGroups
+    setFormData
   } = useProductFormState(product);
 
   const { handleSubmit, loading } = useProductFormSubmit(
@@ -116,7 +113,6 @@ const ProductForm = ({ product, categories, onSubmit, onCancel }: ProductFormPro
             <TabsContent value="complement-groups">
               <ComplementGroupsTab 
                 productId={product?.id}
-                selectedGroups={complementGroups}
                 onChange={handleComplementGroupsChange}
               />
             </TabsContent>

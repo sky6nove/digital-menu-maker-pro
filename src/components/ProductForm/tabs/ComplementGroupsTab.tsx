@@ -1,12 +1,17 @@
 
+import { useEffect } from "react";
+import { useProductComplementGroups } from "@/hooks/useProductComplementGroups";
 import ProductComplementGroups from "@/components/ProductComplementGroups";
-import { useProductComplementGroups } from "@/hooks/productComplements";
 
 interface ComplementGroupsTabProps {
   productId?: number;
+  onChange: (selectedGroups: number[]) => void;
 }
 
-const ComplementGroupsTab = ({ productId }: ComplementGroupsTabProps) => {
+const ComplementGroupsTab = ({
+  productId,
+  onChange
+}: ComplementGroupsTabProps) => {
   const {
     availableGroups,
     selectedGroups,
@@ -19,18 +24,26 @@ const ComplementGroupsTab = ({ productId }: ComplementGroupsTabProps) => {
     updateComplementPrice
   } = useProductComplementGroups(productId);
 
+  // Update parent component when selected groups change
+  useEffect(() => {
+    const groupIds = selectedGroups.map(group => group.complement_group_id);
+    onChange(groupIds);
+  }, [selectedGroups, onChange]);
+
   return (
-    <ProductComplementGroups
-      availableGroups={availableGroups}
-      selectedGroups={selectedGroups}
-      onAddGroup={addGroupToProduct}
-      onRemoveGroup={removeGroupFromProduct}
-      onUpdateRequired={updateGroupRequiredStatus}
-      onUpdateMinMax={updateGroupMinMax}
-      onToggleGroupActive={toggleGroupActive}
-      onToggleComplementActive={toggleComplementActive}
-      onUpdatePrice={updateComplementPrice}
-    />
+    <div className="space-y-4">
+      <ProductComplementGroups
+        availableGroups={availableGroups}
+        selectedGroups={selectedGroups}
+        onAddGroup={addGroupToProduct}
+        onRemoveGroup={removeGroupFromProduct}
+        onUpdateRequired={updateGroupRequiredStatus}
+        onUpdateMinMax={updateGroupMinMax}
+        onToggleGroupActive={toggleGroupActive}
+        onToggleComplementActive={toggleComplementActive}
+        onUpdatePrice={updateComplementPrice}
+      />
+    </div>
   );
 };
 

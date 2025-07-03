@@ -25,8 +25,8 @@ const BasicInfoTab = ({
         name: 'categoryId',
         value: parseInt(value)
       }
-    } as React.ChangeEvent<HTMLInputElement>;
-    onChange(syntheticEvent);
+    };
+    onChange(syntheticEvent as any);
   };
 
   const handleStatusChange = (checked: boolean) => {
@@ -35,8 +35,8 @@ const BasicInfoTab = ({
         name: 'isActive',
         value: checked
       }
-    } as React.ChangeEvent<HTMLInputElement>;
-    onChange(syntheticEvent);
+    };
+    onChange(syntheticEvent as any);
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,8 +47,8 @@ const BasicInfoTab = ({
           name: 'price',
           value: value === "" ? 0 : parseFloat(value)
         }
-      } as React.ChangeEvent<HTMLInputElement>;
-      onChange(syntheticEvent);
+      };
+      onChange(syntheticEvent as any);
     }
   };
 
