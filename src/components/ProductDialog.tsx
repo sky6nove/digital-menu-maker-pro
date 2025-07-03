@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -20,9 +21,24 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
   onClose,
   onAddToCart,
 }) => {
-  const { loading, productComplementGroups } = useProductMenuComplements(product?.id);
+  const { data, loading } = useProductMenuComplements(product?.id);
   const [selectedComplements, setSelectedComplements] = useState<{[groupId: number]: ComplementItem[]}>({});
   const [totalPrice, setTotalPrice] = useState<number>(0);
+
+  // Create productComplementGroups from the data structure
+  const productComplementGroups = data.groups.map(group => ({
+    group: {
+      id: group.id,
+      name: group.name,
+      groupType: group.groupType,
+      isActive: group.isActive,
+      imageUrl: group.imageUrl,
+      minimumQuantity: group.minimumQuantity,
+      maximumQuantity: group.maximumQuantity
+    },
+    isRequired: group.isRequired || false,
+    complements: data.complements[group.id] || []
+  }));
 
   useEffect(() => {
     if (product) {

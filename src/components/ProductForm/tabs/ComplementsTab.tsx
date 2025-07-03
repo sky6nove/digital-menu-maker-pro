@@ -5,25 +5,31 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
 interface ComplementsTabProps {
-  availableComplements: Complement[];
   selectedComplements: number[];
-  toggleComplement: (complementId: number) => void;
-  loadComplements: () => Promise<any>;
+  onChange: (selectedComplements: number[]) => void;
+  availableComplements?: Complement[];
+  loadComplements?: () => Promise<any>;
 }
 
 const ComplementsTab = ({
-  availableComplements = [], // Provide default empty array if undefined
-  selectedComplements = [], // Provide default empty array if undefined
-  toggleComplement,
+  selectedComplements = [],
+  onChange,
+  availableComplements = [],
   loadComplements
 }: ComplementsTabProps) => {
   useEffect(() => {
-    const loadData = async () => {
-      await loadComplements();
-    };
-    
-    loadData();
-  }, []);
+    if (loadComplements) {
+      loadComplements();
+    }
+  }, [loadComplements]);
+
+  const toggleComplement = (complementId: number) => {
+    if (selectedComplements.includes(complementId)) {
+      onChange(selectedComplements.filter(id => id !== complementId));
+    } else {
+      onChange([...selectedComplements, complementId]);
+    }
+  };
 
   return (
     <div className="space-y-4">

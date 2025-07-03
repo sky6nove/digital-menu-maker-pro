@@ -10,22 +10,48 @@ import { DollarSign } from "lucide-react";
 interface BasicInfoTabProps {
   formData: Omit<Product, "id"> | Product;
   categories: Category[];
-  hasMultipleSizes: boolean;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handlePriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleCategoryChange: (value: string) => void;
-  handleStatusChange: (checked: boolean) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
 }
 
 const BasicInfoTab = ({
   formData,
   categories,
-  hasMultipleSizes,
-  handleChange,
-  handlePriceChange,
-  handleCategoryChange,
-  handleStatusChange
+  onChange
 }: BasicInfoTabProps) => {
+  const handleCategoryChange = (value: string) => {
+    // Create a synthetic event to match the expected onChange signature
+    const syntheticEvent = {
+      target: {
+        name: 'categoryId',
+        value: parseInt(value)
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    onChange(syntheticEvent);
+  };
+
+  const handleStatusChange = (checked: boolean) => {
+    const syntheticEvent = {
+      target: {
+        name: 'isActive',
+        value: checked
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    onChange(syntheticEvent);
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^\d*\.?\d*$/.test(value)) {
+      const syntheticEvent = {
+        target: {
+          name: 'price',
+          value: value === "" ? 0 : parseFloat(value)
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(syntheticEvent);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -34,7 +60,7 @@ const BasicInfoTab = ({
           id="name"
           name="name"
           value={formData.name}
-          onChange={handleChange}
+          onChange={onChange}
           placeholder="Nome do produto"
           required
         />
@@ -46,7 +72,7 @@ const BasicInfoTab = ({
           id="description"
           name="description"
           value={formData.description || ""}
-          onChange={handleChange}
+          onChange={onChange}
           placeholder="Descrição do produto"
           rows={3}
         />
@@ -71,26 +97,24 @@ const BasicInfoTab = ({
         </Select>
       </div>
 
-      {!hasMultipleSizes && (
-        <div className="space-y-2">
-          <Label htmlFor="price">Preço (R$)</Label>
-          <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-            <Input
-              id="price"
-              name="price"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.price}
-              onChange={handlePriceChange}
-              placeholder="0.00"
-              className="pl-10"
-              required
-            />
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor="price">Preço (R$)</Label>
+        <div className="relative">
+          <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            id="price"
+            name="price"
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.price}
+            onChange={handlePriceChange}
+            placeholder="0.00"
+            className="pl-10"
+            required
+          />
         </div>
-      )}
+      </div>
 
       <div className="flex items-center space-x-2">
         <Switch

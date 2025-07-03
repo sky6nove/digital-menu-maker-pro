@@ -7,16 +7,25 @@ import { Package } from "lucide-react";
 interface StockTabProps {
   hasStockControl: boolean;
   stockQuantity: number;
-  handleHasStockControlChange: (checked: boolean) => void;
-  handleStockQuantityChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (field: string, value: any) => void;
 }
 
 const StockTab = ({
   hasStockControl,
   stockQuantity,
-  handleHasStockControlChange,
-  handleStockQuantityChange
+  onChange
 }: StockTabProps) => {
+  const handleHasStockControlChange = (checked: boolean) => {
+    onChange('hasStockControl', checked);
+  };
+
+  const handleStockQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      onChange('stockQuantity', value);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">

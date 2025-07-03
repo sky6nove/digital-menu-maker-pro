@@ -6,16 +6,22 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 interface PizzaOptionsTabProps {
   allowHalfHalf: boolean;
   halfHalfPriceRule: string;
-  handleHalfHalfChange: (checked: boolean) => void;
-  handleHalfHalfPriceRuleChange: (value: string) => void;
+  onChange: (field: string, value: any) => void;
 }
 
 const PizzaOptionsTab = ({
   allowHalfHalf,
   halfHalfPriceRule,
-  handleHalfHalfChange,
-  handleHalfHalfPriceRuleChange
+  onChange
 }: PizzaOptionsTabProps) => {
+  const handleHalfHalfChange = (checked: boolean) => {
+    onChange('allow_half_half', checked);
+  };
+
+  const handleHalfHalfPriceRuleChange = (value: string) => {
+    onChange('half_half_price_rule', value);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
