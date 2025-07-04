@@ -17,7 +17,7 @@ export const useProductFormSubmit = (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("Submitting product data:", {
+    console.log("useProductFormSubmit: Submitting product data:", {
       ...formData,
       image_url: formData.image_url
     });
@@ -45,10 +45,20 @@ export const useProductFormSubmit = (
     try {
       // Log the image URL being submitted
       if (formData.image_url) {
-        console.log("Submitting with image URL:", formData.image_url);
+        console.log("useProductFormSubmit: Submitting with image URL:", formData.image_url);
+      } else {
+        console.log("useProductFormSubmit: No image URL provided");
       }
       
-      await onSubmit(formData);
+      // Ensure the image_url is properly included in the form data
+      const productDataWithImage = {
+        ...formData,
+        image_url: formData.image_url || null // Explicitly set to null if empty
+      };
+      
+      console.log("useProductFormSubmit: Final product data before submission:", productDataWithImage);
+      
+      await onSubmit(productDataWithImage);
       
       toast({
         title: "Sucesso",
@@ -56,7 +66,7 @@ export const useProductFormSubmit = (
       });
       
     } catch (error) {
-      console.error("Error saving product:", error);
+      console.error("useProductFormSubmit: Error saving product:", error);
       toast({
         title: "Erro",
         description: "Erro ao salvar produto",

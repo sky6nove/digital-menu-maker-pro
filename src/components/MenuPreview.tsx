@@ -237,19 +237,43 @@ const MenuPreview = ({
     return category.image_url || `https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=200&fit=crop&crop=center`;
   };
 
-  // Get placeholder image for product
-  const getProductPlaceholder = (productName: string) => {
-    return `https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=120&h=120&fit=crop&crop=center`;
+  // Improved placeholder system - different images for different product types
+  const getProductPlaceholder = (productName: string, categoryName?: string) => {
+    console.log(`MenuPreview: Getting placeholder for product "${productName}" in category "${categoryName}"`);
+    
+    // Use different placeholders based on product/category name
+    const name = productName.toLowerCase();
+    const category = categoryName?.toLowerCase() || "";
+    
+    // Food-specific placeholders
+    if (name.includes('burger') || name.includes('hambur') || category.includes('burger')) {
+      return `https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120&h=120&fit=crop&crop=center`;
+    }
+    if (name.includes('pizza') || category.includes('pizza')) {
+      return `https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=120&h=120&fit=crop&crop=center`;
+    }
+    if (name.includes('drink') || name.includes('bebida') || category.includes('bebida')) {
+      return `https://images.unsplash.com/photo-1544145945-f90425340c7e?w=120&h=120&fit=crop&crop=center`;
+    }
+    if (name.includes('sobremesa') || name.includes('doce') || category.includes('sobremesa')) {
+      return `https://images.unsplash.com/photo-1551024506-0bccd828d307?w=120&h=120&fit=crop&crop=center`;
+    }
+    
+    // Generic food placeholder
+    return `https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=120&h=120&fit=crop&crop=center`;
   };
 
-  const getProductImage = (product: Product) => {
-    console.log(`Getting image for product ${product.name}:`, product.image_url);
+  const getProductImage = (product: Product, category?: Category) => {
+    console.log(`MenuPreview: Getting image for product "${product.name}" - image_url:`, product.image_url);
     
     if (product.image_url && product.image_url.trim()) {
+      console.log(`MenuPreview: Using product image URL: ${product.image_url}`);
       return product.image_url;
     }
     
-    return getProductPlaceholder(product.name);
+    const placeholder = getProductPlaceholder(product.name, category?.name);
+    console.log(`MenuPreview: Using placeholder for "${product.name}": ${placeholder}`);
+    return placeholder;
   };
 
   return (
@@ -287,62 +311,69 @@ const MenuPreview = ({
 
               {/* Grid de Produtos */}
               <div className="grid gap-4">
-                {categoryProducts.map((product) => (
-                  <Card 
-                    key={product.id} 
-                    className="bg-white border-none shadow-sm hover:shadow-md transition-shadow duration-200"
-                  >
-                    <CardContent className="p-0">
-                      <div className="flex items-stretch">
-                        {/* Imagem do Produto */}
-                        <div className="w-32 h-32 flex-shrink-0">
-                          <img
-                            src={getProductImage(product)}
-                            alt={product.name}
-                            className="w-full h-full object-cover rounded-l-lg"
-                            onError={(e) => {
-                              console.error(`Failed to load image for ${product.name}:`, product.image_url);
-                              // Fallback to placeholder if image fails to load
-                              const target = e.target as HTMLImageElement;
-                              target.src = getProductPlaceholder(product.name);
-                            }}
-                            onLoad={() => {
-                              console.log(`Successfully loaded image for ${product.name}:`, product.image_url);
-                            }}
-                          />
-                        </div>
-
-                        {/* Informações do Produto */}
-                        <div className="flex-1 p-4 flex flex-col justify-between">
-                          <div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                              {product.name}
-                            </h3>
-                            
-                            {product.description && (
-                              <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                                {product.description}
-                              </p>
-                            )}
+                {categoryProducts.map((product) => {
+                  const productImageUrl = getProductImage(product, category);
+                  
+                  return (
+                    <Card 
+                      key={product.id} 
+                      className="bg-white border-none shadow-sm hover:shadow-md transition-shadow duration-200"
+                    >
+                      <CardContent className="p-0">
+                        <div className="flex items-stretch">
+                          {/* Imagem do Produto */}
+                          <div className="w-32 h-32 flex-shrink-0">
+                            <img
+                              src={productImageUrl}
+                              alt={product.name}
+                              className="w-full h-full object-cover rounded-l-lg"
+                              onError={(e) => {
+                                console.error(`MenuPreview: Failed to load image for "${product.name}":`, productImageUrl);
+                                // Fallback to generic placeholder if the current one fails
+                                const target = e.target as HTMLImageElement;
+                                const fallbackUrl = `https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=120&h=120&fit=crop&crop=center`;
+                                if (target.src !== fallbackUrl) {
+                                  target.src = fallbackUrl;
+                                }
+                              }}
+                              onLoad={() => {
+                                console.log(`MenuPreview: Successfully loaded image for "${product.name}":`, productImageUrl);
+                              }}
+                            />
                           </div>
 
-                          <div className="flex items-center justify-between">
-                            <div className="text-2xl font-bold text-green-600">
-                              R$ {formatPrice(product.price)}
+                          {/* Informações do Produto */}
+                          <div className="flex-1 p-4 flex flex-col justify-between">
+                            <div>
+                              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                {product.name}
+                              </h3>
+                              
+                              {product.description && (
+                                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                                  {product.description}
+                                </p>
+                              )}
                             </div>
-                            
-                            <Button 
-                              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-medium"
-                              onClick={() => openProductDialog(product)}
-                            >
-                              Pedir
-                            </Button>
+
+                            <div className="flex items-center justify-between">
+                              <div className="text-2xl font-bold text-green-600">
+                                R$ {formatPrice(product.price)}
+                              </div>
+                              
+                              <Button 
+                                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-medium"
+                                onClick={() => openProductDialog(product)}
+                              >
+                                Pedir
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           );

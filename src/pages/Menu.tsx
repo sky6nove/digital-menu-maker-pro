@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Product, Category } from "@/types";
 import MenuPreview from "@/components/MenuPreview";
@@ -25,6 +26,7 @@ const Menu = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log("Menu: Loading data for user:", user?.id);
       
       // Load profile for menu name
       const { data: profileData, error: profileError } = await supabase
@@ -65,6 +67,8 @@ const Menu = () => {
       
       if (productsError) throw productsError;
       
+      console.log("Menu: Raw products data from database:", productsData);
+      
       // Transform to match our existing interfaces
       const formattedCategories: Category[] = categoriesData.map(cat => ({
         id: cat.id,
@@ -79,15 +83,16 @@ const Menu = () => {
       }));
       
       const formattedProducts: Product[] = productsData.map(prod => {
-        console.log(`Product ${prod.name} image URL:`, prod.image_url);
-        return {
+        console.log(`Menu: Processing product "${prod.name}" - image_url from DB:`, prod.image_url);
+        
+        const product = {
           id: prod.id,
           name: prod.name,
           description: prod.description || "",
           price: prod.price,
           categoryId: prod.category_id || 0,
           isActive: prod.is_active,
-          image_url: prod.image_url,
+          image_url: prod.image_url, // Keep as-is from database
           allow_half_half: prod.allow_half_half || false,
           half_half_price_rule: prod.half_half_price_rule as 'lowest' | 'highest' | 'average' || 'highest',
           pdvCode: prod.pdv_code,
@@ -99,15 +104,23 @@ const Menu = () => {
           stockQuantity: prod.stock_quantity,
           display_order: prod.display_order
         };
+        
+        console.log(`Menu: Formatted product "${product.name}" - final image_url:`, product.image_url);
+        return product;
       });
       
       setCategories(formattedCategories);
       setProducts(formattedProducts);
 
-      console.log("Loaded products with images:", formattedProducts.filter(p => p.image_url).map(p => ({ name: p.name, image_url: p.image_url })));
+      console.log("Menu: Final products with images:", formattedProducts.map(p => ({ 
+        name: p.name, 
+        image_url: p.image_url,
+        hasImage: !!p.image_url 
+      })));
+      
     } catch (error: any) {
+      console.error("Menu: Error loading menu data:", error);
       toast.error("Erro ao carregar dados do menu");
-      console.error("Error loading menu data:", error);
     } finally {
       setLoading(false);
     }

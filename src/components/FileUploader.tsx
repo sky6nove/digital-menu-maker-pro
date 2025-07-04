@@ -27,6 +27,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
   // Initialize with current image URL if provided
   useEffect(() => {
     if (currentImageUrl) {
+      console.log("FileUploader: Initializing with current image URL:", currentImageUrl);
       setImageUrl(currentImageUrl);
       setImageUrlInput(currentImageUrl);
     }
@@ -36,10 +37,12 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     const maxRetries = 3;
     
     try {
+      console.log(`FileUploader: Upload attempt ${attempt + 1} for file: ${file.name}`);
+      
       // Generate unique filename
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
       
-      console.log(`Upload attempt ${attempt + 1} for file: ${fileName}`);
+      console.log(`FileUploader: Uploading to storage with filename: ${fileName}`);
       
       // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
@@ -50,32 +53,38 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         });
 
       if (error) {
-        console.error("Upload error:", error);
+        console.error("FileUploader: Storage upload error:", error);
         throw error;
       }
 
-      console.log("Upload successful:", data);
+      console.log("FileUploader: Upload successful, data:", data);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from("product-images")
         .getPublicUrl(data.path);
 
-      console.log("Public URL generated:", publicUrl);
+      console.log("FileUploader: Generated public URL:", publicUrl);
       
-      // Verify the URL is accessible
-      const testResponse = await fetch(publicUrl, { method: 'HEAD' });
-      if (!testResponse.ok) {
-        throw new Error(`URL not accessible: ${testResponse.status}`);
+      // Verify the URL is accessible with a quick test
+      try {
+        const testResponse = await fetch(publicUrl, { method: 'HEAD' });
+        console.log("FileUploader: URL accessibility test:", testResponse.status, testResponse.ok);
+        
+        if (!testResponse.ok && testResponse.status !== 404) {
+          console.warn("FileUploader: URL may not be immediately accessible, but continuing...");
+        }
+      } catch (testError) {
+        console.warn("FileUploader: URL test failed, but continuing:", testError);
       }
 
       return publicUrl;
       
     } catch (error: any) {
-      console.error(`Upload attempt ${attempt + 1} failed:`, error);
+      console.error(`FileUploader: Upload attempt ${attempt + 1} failed:`, error);
       
       if (attempt < maxRetries - 1) {
-        console.log(`Retrying upload... (${attempt + 2}/${maxRetries})`);
+        console.log(`FileUploader: Retrying upload... (${attempt + 2}/${maxRetries})`);
         setRetryCount(attempt + 1);
         await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
         return uploadFileWithRetry(file, attempt + 1);
@@ -90,9 +99,11 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     if (!files || files.length === 0) return;
 
     const file = files[0];
+    console.log("FileUploader: File selected:", file.name, "Size:", file.size, "Type:", file.type);
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
+      console.error("FileUploader: Invalid file type:", file.type);
       toast({
         title: "Tipo de arquivo inválido",
         description: "Por favor, selecione apenas imagens.",
@@ -103,6 +114,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
+      console.error("FileUploader: File too large:", file.size);
       toast({
         title: "Arquivo muito grande",
         description: "O tamanho máximo permitido é 5MB.",
@@ -114,8 +126,10 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     try {
       setUploading(true);
       setRetryCount(0);
+      console.log("FileUploader: Starting upload process...");
 
       const publicUrl = await uploadFileWithRetry(file);
+      console.log("FileUploader: Upload completed successfully, URL:", publicUrl);
 
       setImageUrl(publicUrl);
       setImageUrlInput(publicUrl);
@@ -132,7 +146,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       }
       
     } catch (error: any) {
-      console.error("Error uploading file:", error);
+      console.error("FileUploader: Final upload error:", error);
       toast({
         title: "Erro no upload",
         description: error.message || "Não foi possível fazer o upload do arquivo.",
@@ -168,7 +182,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       return;
     }
     
-    console.log("Setting image URL:", imageUrlInput);
+    console.log("FileUploader: Setting external image URL:", imageUrlInput);
     setImageUrl(imageUrlInput);
     onUploadComplete(imageUrlInput);
     
@@ -184,6 +198,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       const refreshUrl = imageUrl.includes('?') 
         ? `${imageUrl}&t=${Date.now()}` 
         : `${imageUrl}?t=${Date.now()}`;
+      console.log("FileUploader: Refreshing image URL:", refreshUrl);
       setImageUrl(refreshUrl);
     }
   };
@@ -272,7 +287,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
               className="mx-auto max-h-48 object-contain"
               key={imageUrl} // Force re-render when URL changes
               onError={(e) => {
-                console.error("Error loading image:", imageUrl);
+                console.error("FileUploader: Error loading preview image:", imageUrl);
                 toast({
                   title: "Erro ao carregar imagem",
                   description: "Não foi possível carregar a imagem. Verifique a URL.",
@@ -280,7 +295,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
                 });
               }}
               onLoad={() => {
-                console.log("Image loaded successfully:", imageUrl);
+                console.log("FileUploader: Preview image loaded successfully:", imageUrl);
               }}
             />
           </div>
