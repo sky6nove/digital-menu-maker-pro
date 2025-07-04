@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Image as ImageIcon, Link, Loader2, RefreshCw, Settings } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -16,6 +18,7 @@ interface FileUploaderProps {
 
 const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [fixingPolicies, setFixingPolicies] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
@@ -69,6 +72,21 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     
     try {
       console.log(`FileUploader: Upload attempt ${attempt + 1} for file: ${file.name}`);
+      console.log("FileUploader: User authenticated:", !!user, "User ID:", user?.id);
+      
+      // Check authentication before attempting upload
+      if (!user) {
+        throw new Error("Usuário não autenticado. Faça login para fazer upload de imagens.");
+      }
+      
+      // Verify session is valid
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.error("FileUploader: Session error:", sessionError);
+        throw new Error("Sessão inválida. Faça login novamente.");
+      }
+      
+      console.log("FileUploader: Session valid, proceeding with upload");
       
       // Generate unique filename
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
@@ -132,6 +150,16 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     const file = files[0];
     console.log("FileUploader: File selected:", file.name, "Size:", file.size, "Type:", file.type);
 
+    // Check authentication first
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Você precisa estar logado para fazer upload de imagens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate file type
     if (!file.type.startsWith("image/")) {
       console.error("FileUploader: Invalid file type:", file.type);
@@ -178,11 +206,27 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       
     } catch (error: any) {
       console.error("FileUploader: Final upload error:", error);
-      toast({
-        title: "Erro no upload",
-        description: error.message || "Não foi possível fazer o upload do arquivo.",
-        variant: "destructive",
-      });
+      
+      // Show specific error messages
+      if (error.message.includes("row-level security policy")) {
+        toast({
+          title: "Erro de permissão",
+          description: "Clique em 'Corrigir Políticas' e tente novamente, ou use uma URL externa.",
+          variant: "destructive",
+        });
+      } else if (error.message.includes("Usuário não autenticado") || error.message.includes("Sessão inválida")) {
+        toast({
+          title: "Erro de autenticação",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro no upload",
+          description: error.message || "Não foi possível fazer o upload do arquivo.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setUploading(false);
       setRetryCount(0);
@@ -254,10 +298,19 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
           {fixingPolicies ? "Corrigindo..." : "Corrigir Políticas"}
         </Button>
       </div>
+
+      {/* Authentication status indicator */}
+      {!user && (
+        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-sm text-yellow-700">
+            ⚠️ Você precisa estar logado para fazer upload de arquivos. Use a aba URL para definir uma imagem externa.
+          </p>
+        </div>
+      )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload" className="flex items-center gap-2">
+          <TabsTrigger value="upload" className="flex items-center gap-2" disabled={!user}>
             <ImageIcon className="h-4 w-4" />
             Upload
           </TabsTrigger>
@@ -277,7 +330,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
                 accept="image/*"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                disabled={uploading}
+                disabled={uploading || !user}
                 className="cursor-pointer"
               />
             </div>
