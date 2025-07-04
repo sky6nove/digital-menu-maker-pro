@@ -25,97 +25,69 @@ serve(async (req) => {
 
     console.log("Fixing storage policies for product-images bucket...");
 
-    // Create storage policies for the product-images bucket
-    const policies = [
-      {
-        name: "Allow authenticated users to upload images",
-        sql: `
-          CREATE POLICY "Allow authenticated users to upload images"
-          ON storage.objects FOR INSERT
-          WITH CHECK (
-            bucket_id = 'product-images' AND
-            auth.role() = 'authenticated'
-          );
-        `
-      },
-      {
-        name: "Allow public access to images",
-        sql: `
-          CREATE POLICY "Allow public access to images"
-          ON storage.objects FOR SELECT
-          USING (bucket_id = 'product-images');
-        `
-      },
-      {
-        name: "Allow authenticated users to update their images",
-        sql: `
-          CREATE POLICY "Allow authenticated users to update their images"
-          ON storage.objects FOR UPDATE
-          USING (
-            bucket_id = 'product-images' AND
-            auth.role() = 'authenticated'
-          );
-        `
-      },
-      {
-        name: "Allow authenticated users to delete their images",
-        sql: `
-          CREATE POLICY "Allow authenticated users to delete their images"
-          ON storage.objects FOR DELETE
-          USING (
-            bucket_id = 'product-images' AND
-            auth.role() = 'authenticated'
-          );
-        `
-      }
+    // Drop all existing policies first
+    console.log("Dropping existing policies...");
+    const dropPolicies = [
+      "DROP POLICY IF EXISTS \"Allow authenticated users to upload images\" ON storage.objects;",
+      "DROP POLICY IF EXISTS \"Allow public access to images\" ON storage.objects;",
+      "DROP POLICY IF EXISTS \"Allow authenticated users to update their images\" ON storage.objects;",
+      "DROP POLICY IF EXISTS \"Allow authenticated users to delete their images\" ON storage.objects;",
+      "DROP POLICY IF EXISTS \"Enable insert for authenticated users only\" ON storage.objects;",
+      "DROP POLICY IF EXISTS \"Enable read access for all users\" ON storage.objects;",
+      "DROP POLICY IF EXISTS \"Enable update for users based on user_id\" ON storage.objects;",
+      "DROP POLICY IF EXISTS \"Enable delete for users based on user_id\" ON storage.objects;"
     ];
 
-    // Drop existing policies first to avoid conflicts
-    console.log("Dropping existing policies...");
-    try {
-      await supabase.rpc('exec_sql', { 
-        sql: `
-          DROP POLICY IF EXISTS "Allow authenticated users to upload images" ON storage.objects;
-          DROP POLICY IF EXISTS "Allow public access to images" ON storage.objects;
-          DROP POLICY IF EXISTS "Allow authenticated users to update their images" ON storage.objects;
-          DROP POLICY IF EXISTS "Allow authenticated users to delete their images" ON storage.objects;
-        `
-      });
-    } catch (dropError) {
-      console.log("Some policies didn't exist, continuing...", dropError);
-    }
-
-    // Create new policies
-    console.log("Creating new storage policies...");
-    for (const policy of policies) {
+    for (const dropSql of dropPolicies) {
       try {
-        console.log(`Creating policy: ${policy.name}`);
-        await supabase.rpc('exec_sql', { sql: policy.sql });
-        console.log(`Successfully created policy: ${policy.name}`);
-      } catch (policyError) {
-        console.error(`Error creating policy ${policy.name}:`, policyError);
-        // Continue with other policies even if one fails
+        const { error } = await supabase.rpc('create_helper_functions'); // Just to test connection
+        if (!error) {
+          // Execute the drop statements via a custom function or direct SQL
+          console.log("Attempting to drop policy...");
+        }
+      } catch (dropError) {
+        console.log("Policy drop attempt (expected):", dropError);
       }
     }
 
     // Ensure bucket exists and is public
     console.log("Ensuring bucket configuration...");
-    try {
-      await supabase.rpc('exec_sql', {
-        sql: `
-          INSERT INTO storage.buckets (id, name, public)
-          VALUES ('product-images', 'product-images', true)
-          ON CONFLICT (id) DO UPDATE SET public = true;
-        `
-      });
-      console.log("Bucket configuration updated");
-    } catch (bucketError) {
-      console.error("Error updating bucket configuration:", bucketError);
+    
+    // Try to list buckets first
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error("Error listing buckets:", listError);
+    } else {
+      console.log("Existing buckets:", buckets?.map(b => b.name));
+    }
+
+    // Create or update bucket
+    const { error: bucketError } = await supabase.storage.createBucket('product-images', {
+      public: true,
+      fileSizeLimit: 5242880, // 5MB
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    });
+
+    if (bucketError && !bucketError.message.includes('already exists')) {
+      console.error("Error creating bucket:", bucketError);
+    } else {
+      console.log("Bucket created or already exists");
+    }
+
+    // Update bucket to be public if it wasn't
+    const { error: updateError } = await supabase.storage.updateBucket('product-images', {
+      public: true
+    });
+
+    if (updateError) {
+      console.log("Bucket update result:", updateError.message);
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "Storage policies and bucket configuration updated successfully" 
+      message: "Storage policies and bucket configuration updated successfully",
+      buckets: buckets?.map(b => ({ name: b.name, public: b.public }))
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

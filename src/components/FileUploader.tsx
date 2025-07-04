@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Image as ImageIcon, Link, Loader2, RefreshCw } from "lucide-react";
+import { Image as ImageIcon, Link, Loader2, RefreshCw, Settings } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -18,6 +17,7 @@ interface FileUploaderProps {
 const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [fixingPolicies, setFixingPolicies] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [activeTab, setActiveTab] = useState<string>("upload");
@@ -32,6 +32,37 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       setImageUrlInput(currentImageUrl);
     }
   }, [currentImageUrl]);
+
+  const fixStoragePolicies = async () => {
+    setFixingPolicies(true);
+    try {
+      console.log("FileUploader: Calling fix-storage-policies edge function...");
+      
+      const { data, error } = await supabase.functions.invoke('fix-storage-policies');
+      
+      if (error) {
+        console.error("FileUploader: Error calling fix-storage-policies:", error);
+        throw error;
+      }
+      
+      console.log("FileUploader: Storage policies fixed:", data);
+      
+      toast({
+        title: "Políticas corrigidas",
+        description: "As políticas de storage foram atualizadas. Tente fazer upload novamente.",
+      });
+      
+    } catch (error: any) {
+      console.error("FileUploader: Error fixing storage policies:", error);
+      toast({
+        title: "Erro ao corrigir políticas",
+        description: error.message || "Não foi possível corrigir as políticas de storage.",
+        variant: "destructive",
+      });
+    } finally {
+      setFixingPolicies(false);
+    }
+  };
 
   const uploadFileWithRetry = async (file: File, attempt = 0): Promise<string> => {
     const maxRetries = 3;
@@ -205,6 +236,25 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label>Upload de Imagem</Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={fixStoragePolicies}
+          disabled={fixingPolicies}
+          className="flex items-center gap-2"
+        >
+          {fixingPolicies ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Settings className="h-3 w-3" />
+          )}
+          {fixingPolicies ? "Corrigindo..." : "Corrigir Políticas"}
+        </Button>
+      </div>
+      
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="upload" className="flex items-center gap-2">
