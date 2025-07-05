@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,9 +118,9 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         // More detailed error handling
         if (error.message && error.message.includes('row-level security')) {
           throw new Error("Erro de permissão: As políticas de segurança impedem o upload. Clique em 'Corrigir Políticas' e tente novamente.");
-        } else if (error.statusCode === '401' || error.statusCode === '403') {
+        } else if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
           throw new Error("Erro de autenticação: Faça login novamente e tente novamente.");
-        } else if (error.statusCode === '413') {
+        } else if (error.message && error.message.includes('413')) {
           throw new Error("Arquivo muito grande: O tamanho máximo permitido é 5MB.");
         } else {
           throw new Error(`Erro no upload: ${error.message || 'Erro desconhecido'}`);
@@ -153,7 +154,6 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       console.error(`FileUploader: Upload attempt ${attempt + 1} failed:`, error);
       console.error("FileUploader: Error details:", {
         message: error.message,
-        statusCode: error.statusCode,
         error: error.error,
         stack: error.stack
       });
