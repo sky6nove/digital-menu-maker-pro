@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,11 +86,21 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       }
       
       console.log("FileUploader: Session valid, proceeding with upload");
+      console.log("FileUploader: Session details:", {
+        user_id: session.user?.id,
+        access_token: session.access_token ? "present" : "missing",
+        expires_at: session.expires_at
+      });
       
       // Generate unique filename
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
       
       console.log(`FileUploader: Uploading to storage with filename: ${fileName}`);
+      console.log("FileUploader: File details:", {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
       
       // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
@@ -103,7 +112,18 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
       if (error) {
         console.error("FileUploader: Storage upload error:", error);
-        throw error;
+        console.error("FileUploader: Full error object:", JSON.stringify(error, null, 2));
+        
+        // More detailed error handling
+        if (error.message && error.message.includes('row-level security')) {
+          throw new Error("Erro de permissão: As políticas de segurança impedem o upload. Clique em 'Corrigir Políticas' e tente novamente.");
+        } else if (error.statusCode === '401' || error.statusCode === '403') {
+          throw new Error("Erro de autenticação: Faça login novamente e tente novamente.");
+        } else if (error.statusCode === '413') {
+          throw new Error("Arquivo muito grande: O tamanho máximo permitido é 5MB.");
+        } else {
+          throw new Error(`Erro no upload: ${error.message || 'Erro desconhecido'}`);
+        }
       }
 
       console.log("FileUploader: Upload successful, data:", data);
@@ -131,6 +151,12 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       
     } catch (error: any) {
       console.error(`FileUploader: Upload attempt ${attempt + 1} failed:`, error);
+      console.error("FileUploader: Error details:", {
+        message: error.message,
+        statusCode: error.statusCode,
+        error: error.error,
+        stack: error.stack
+      });
       
       if (attempt < maxRetries - 1) {
         console.log(`FileUploader: Retrying upload... (${attempt + 2}/${maxRetries})`);
@@ -138,7 +164,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
         return uploadFileWithRetry(file, attempt + 1);
       } else {
-        throw new Error(`Upload failed after ${maxRetries} attempts: ${error.message}`);
+        throw error; // Re-throw the original error with full details
       }
     }
   };
@@ -208,25 +234,11 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       console.error("FileUploader: Final upload error:", error);
       
       // Show specific error messages
-      if (error.message.includes("row-level security policy")) {
-        toast({
-          title: "Erro de permissão",
-          description: "Clique em 'Corrigir Políticas' e tente novamente, ou use uma URL externa.",
-          variant: "destructive",
-        });
-      } else if (error.message.includes("Usuário não autenticado") || error.message.includes("Sessão inválida")) {
-        toast({
-          title: "Erro de autenticação",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Erro no upload",
-          description: error.message || "Não foi possível fazer o upload do arquivo.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Erro no upload",
+        description: error.message || "Não foi possível fazer o upload do arquivo.",
+        variant: "destructive",
+      });
     } finally {
       setUploading(false);
       setRetryCount(0);
