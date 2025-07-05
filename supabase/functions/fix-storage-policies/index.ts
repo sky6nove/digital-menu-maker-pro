@@ -23,81 +23,67 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Fixing storage policies for product-images bucket...");
+    console.log("Verificando e corrigindo políticas de storage...");
 
-    // Drop all existing policies first
-    console.log("Dropping existing policies...");
-    const dropPolicies = [
-      "DROP POLICY IF EXISTS \"Allow authenticated users to upload images\" ON storage.objects;",
-      "DROP POLICY IF EXISTS \"Allow public access to images\" ON storage.objects;",
-      "DROP POLICY IF EXISTS \"Allow authenticated users to update their images\" ON storage.objects;",
-      "DROP POLICY IF EXISTS \"Allow authenticated users to delete their images\" ON storage.objects;",
-      "DROP POLICY IF EXISTS \"Enable insert for authenticated users only\" ON storage.objects;",
-      "DROP POLICY IF EXISTS \"Enable read access for all users\" ON storage.objects;",
-      "DROP POLICY IF EXISTS \"Enable update for users based on user_id\" ON storage.objects;",
-      "DROP POLICY IF EXISTS \"Enable delete for users based on user_id\" ON storage.objects;"
-    ];
+    // Verificar se as políticas existem
+    const { data: policies, error: policiesError } = await supabase
+      .from('pg_policies')
+      .select('policyname')
+      .eq('tablename', 'objects')
+      .eq('schemaname', 'storage');
 
-    for (const dropSql of dropPolicies) {
-      try {
-        const { error } = await supabase.rpc('create_helper_functions'); // Just to test connection
-        if (!error) {
-          // Execute the drop statements via a custom function or direct SQL
-          console.log("Attempting to drop policy...");
-        }
-      } catch (dropError) {
-        console.log("Policy drop attempt (expected):", dropError);
-      }
+    if (policiesError) {
+      console.log("Erro ao verificar políticas (esperado):", policiesError.message);
     }
 
-    // Ensure bucket exists and is public
-    console.log("Ensuring bucket configuration...");
+    console.log("Políticas encontradas:", policies?.map(p => p.policyname) || []);
+
+    // Verificar configuração do bucket
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     
-    // Try to list buckets first
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
-    if (listError) {
-      console.error("Error listing buckets:", listError);
-    } else {
-      console.log("Existing buckets:", buckets?.map(b => b.name));
+    if (bucketsError) {
+      console.error("Erro ao listar buckets:", bucketsError);
+      throw bucketsError;
     }
 
-    // Create or update bucket
-    const { error: bucketError } = await supabase.storage.createBucket('product-images', {
-      public: true,
-      fileSizeLimit: 5242880, // 5MB
-      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-    });
+    const productImagesBucket = buckets?.find(b => b.name === 'product-images');
+    console.log("Bucket product-images encontrado:", productImagesBucket);
 
-    if (bucketError && !bucketError.message.includes('already exists')) {
-      console.error("Error creating bucket:", bucketError);
+    // Testar upload para verificar se as políticas estão funcionando
+    const testFile = new File(['test'], 'test.txt', { type: 'text/plain' });
+    const { data: testUpload, error: testError } = await supabase.storage
+      .from('product-images')
+      .upload(`test-${Date.now()}.txt`, testFile);
+
+    let uploadTest = "success";
+    if (testError) {
+      console.log("Teste de upload falhou:", testError.message);
+      uploadTest = testError.message;
     } else {
-      console.log("Bucket created or already exists");
-    }
-
-    // Update bucket to be public if it wasn't
-    const { error: updateError } = await supabase.storage.updateBucket('product-images', {
-      public: true
-    });
-
-    if (updateError) {
-      console.log("Bucket update result:", updateError.message);
+      console.log("Teste de upload bem-sucedido:", testUpload);
+      // Limpar arquivo de teste
+      await supabase.storage.from('product-images').remove([testUpload.path]);
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "Storage policies and bucket configuration updated successfully",
-      buckets: buckets?.map(b => ({ name: b.name, public: b.public }))
+      message: "Verificação de políticas concluída",
+      details: {
+        bucket_exists: !!productImagesBucket,
+        bucket_public: productImagesBucket?.public || false,
+        upload_test: uploadTest,
+        policies_found: policies?.length || 0
+      }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
     
   } catch (error) {
-    console.error("Error fixing storage policies:", error);
+    console.error("Erro na função fix-storage-policies:", error);
     return new Response(JSON.stringify({ 
       error: error.message,
-      details: "Failed to fix storage policies"
+      details: "Falha ao verificar políticas de storage"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

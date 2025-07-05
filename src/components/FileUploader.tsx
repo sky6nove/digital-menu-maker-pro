@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Image as ImageIcon, Link, Loader2, RefreshCw, Settings } from "lucide-react";
+import { Image as ImageIcon, Link, Loader2, RefreshCw, Settings, CheckCircle } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -21,6 +20,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [fixingPolicies, setFixingPolicies] = useState(false);
+  const [policiesStatus, setPoliciesStatus] = useState<'unknown' | 'working' | 'needs_fix'>('unknown');
   const [imageUrl, setImageUrl] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [activeTab, setActiveTab] = useState<string>("upload");
@@ -36,6 +36,39 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     }
   }, [currentImageUrl]);
 
+  // Check policies status on mount
+  useEffect(() => {
+    if (user) {
+      checkPoliciesStatus();
+    }
+  }, [user]);
+
+  const checkPoliciesStatus = async () => {
+    try {
+      console.log("FileUploader: Verificando status das políticas...");
+      
+      const { data, error } = await supabase.functions.invoke('fix-storage-policies');
+      
+      if (error) {
+        console.error("FileUploader: Erro ao verificar políticas:", error);
+        setPoliciesStatus('needs_fix');
+        return;
+      }
+      
+      console.log("FileUploader: Status das políticas:", data);
+      
+      if (data?.details?.upload_test === 'success') {
+        setPoliciesStatus('working');
+      } else {
+        setPoliciesStatus('needs_fix');
+      }
+      
+    } catch (error: any) {
+      console.error("FileUploader: Erro ao verificar políticas:", error);
+      setPoliciesStatus('needs_fix');
+    }
+  };
+
   const fixStoragePolicies = async () => {
     setFixingPolicies(true);
     try {
@@ -48,18 +81,29 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         throw error;
       }
       
-      console.log("FileUploader: Storage policies fixed:", data);
+      console.log("FileUploader: Storage policies check result:", data);
       
-      toast({
-        title: "Políticas corrigidas",
-        description: "As políticas de storage foram atualizadas. Tente fazer upload novamente.",
-      });
+      if (data?.details?.upload_test === 'success') {
+        setPoliciesStatus('working');
+        toast({
+          title: "Políticas verificadas",
+          description: "As políticas de storage estão funcionando corretamente.",
+        });
+      } else {
+        setPoliciesStatus('needs_fix');
+        toast({
+          title: "Políticas precisam de correção",
+          description: "As políticas ainda não estão funcionando. Tente fazer upload para testar.",
+          variant: "destructive",
+        });
+      }
       
     } catch (error: any) {
       console.error("FileUploader: Error fixing storage policies:", error);
+      setPoliciesStatus('needs_fix');
       toast({
-        title: "Erro ao corrigir políticas",
-        description: error.message || "Não foi possível corrigir as políticas de storage.",
+        title: "Erro ao verificar políticas",
+        description: error.message || "Não foi possível verificar as políticas de storage.",
         variant: "destructive",
       });
     } finally {
@@ -73,6 +117,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     try {
       console.log(`FileUploader: Upload attempt ${attempt + 1} for file: ${file.name}`);
       console.log("FileUploader: User authenticated:", !!user, "User ID:", user?.id);
+      console.log("FileUploader: Policies status:", policiesStatus);
       
       // Check authentication before attempting upload
       if (!user) {
@@ -117,7 +162,8 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         
         // More detailed error handling
         if (error.message && error.message.includes('row-level security')) {
-          throw new Error("Erro de permissão: As políticas de segurança impedem o upload. Clique em 'Corrigir Políticas' e tente novamente.");
+          setPoliciesStatus('needs_fix');
+          throw new Error("Erro de permissão: As políticas de segurança impedem o upload. Clique em 'Verificar Políticas' e tente novamente.");
         } else if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
           throw new Error("Erro de autenticação: Faça login novamente e tente novamente.");
         } else if (error.message && error.message.includes('413')) {
@@ -128,6 +174,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       }
 
       console.log("FileUploader: Upload successful, data:", data);
+      setPoliciesStatus('working'); // Mark policies as working after successful upload
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -290,15 +337,39 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     }
   };
 
+  const getPoliciesStatusColor = () => {
+    switch (policiesStatus) {
+      case 'working': return 'text-green-600';
+      case 'needs_fix': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  const getPoliciesStatusText = () => {
+    switch (policiesStatus) {
+      case 'working': return 'Funcionando';
+      case 'needs_fix': return 'Precisa correção';
+      default: return 'Verificando...';
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label>Upload de Imagem</Label>
+        <div className="flex items-center gap-2">
+          <Label>Upload de Imagem</Label>
+          {policiesStatus === 'working' && (
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          )}
+          <span className={`text-xs ${getPoliciesStatusColor()}`}>
+            ({getPoliciesStatusText()})
+          </span>
+        </div>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={fixStoragePolicies}
+          onClick={fixingPolicies ? undefined : fixStoragePolicies}
           disabled={fixingPolicies}
           className="flex items-center gap-2"
         >
@@ -307,7 +378,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
           ) : (
             <Settings className="h-3 w-3" />
           )}
-          {fixingPolicies ? "Corrigindo..." : "Corrigir Políticas"}
+          {fixingPolicies ? "Verificando..." : "Verificar Políticas"}
         </Button>
       </div>
 
@@ -316,6 +387,15 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <p className="text-sm text-yellow-700">
             ⚠️ Você precisa estar logado para fazer upload de arquivos. Use a aba URL para definir uma imagem externa.
+          </p>
+        </div>
+      )}
+      
+      {/* Policies status indicator */}
+      {user && policiesStatus === 'needs_fix' && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-700">
+            ⚠️ As políticas de storage podem estar com problema. Clique em "Verificar Políticas" antes de fazer upload.
           </p>
         </div>
       )}
