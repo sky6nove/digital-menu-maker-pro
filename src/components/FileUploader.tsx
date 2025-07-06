@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Image as ImageIcon, Link, Loader2, RefreshCw, Settings, CheckCircle } from "lucide-react";
+import { Image as ImageIcon, Link, Loader2, RefreshCw, Settings, CheckCircle, AlertCircle } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -19,18 +20,17 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
   const { toast } = useToast();
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [fixingPolicies, setFixingPolicies] = useState(false);
+  const [checkingPolicies, setCheckingPolicies] = useState(false);
   const [policiesStatus, setPoliciesStatus] = useState<'unknown' | 'working' | 'needs_fix'>('unknown');
   const [imageUrl, setImageUrl] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [activeTab, setActiveTab] = useState<string>("upload");
-  const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Initialize with current image URL if provided
   useEffect(() => {
     if (currentImageUrl) {
-      console.log("FileUploader: Initializing with current image URL:", currentImageUrl);
+      console.log("🖼️ FileUploader: Inicializando com imagem atual:", currentImageUrl);
       setImageUrl(currentImageUrl);
       setImageUrlInput(currentImageUrl);
     }
@@ -44,175 +44,38 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
   }, [user]);
 
   const checkPoliciesStatus = async () => {
+    if (!user) {
+      setPoliciesStatus('needs_fix');
+      return;
+    }
+
+    setCheckingPolicies(true);
     try {
-      console.log("FileUploader: Verificando status das políticas...");
+      console.log("🔍 FileUploader: Verificando status das políticas...");
       
       const { data, error } = await supabase.functions.invoke('fix-storage-policies');
       
       if (error) {
-        console.error("FileUploader: Erro ao verificar políticas:", error);
+        console.error("❌ FileUploader: Erro ao verificar políticas:", error);
         setPoliciesStatus('needs_fix');
         return;
       }
       
-      console.log("FileUploader: Status das políticas:", data);
+      console.log("📊 FileUploader: Status das políticas:", data);
       
-      if (data?.details?.upload_test === 'success') {
+      if (data?.success && data?.details?.upload_test === 'success') {
         setPoliciesStatus('working');
+        console.log("✅ Políticas funcionando corretamente");
       } else {
         setPoliciesStatus('needs_fix');
+        console.log("⚠️ Políticas precisam de correção:", data?.details?.upload_test);
       }
       
     } catch (error: any) {
-      console.error("FileUploader: Erro ao verificar políticas:", error);
+      console.error("💥 FileUploader: Erro ao verificar políticas:", error);
       setPoliciesStatus('needs_fix');
-    }
-  };
-
-  const fixStoragePolicies = async () => {
-    setFixingPolicies(true);
-    try {
-      console.log("FileUploader: Calling fix-storage-policies edge function...");
-      
-      const { data, error } = await supabase.functions.invoke('fix-storage-policies');
-      
-      if (error) {
-        console.error("FileUploader: Error calling fix-storage-policies:", error);
-        throw error;
-      }
-      
-      console.log("FileUploader: Storage policies check result:", data);
-      
-      if (data?.details?.upload_test === 'success') {
-        setPoliciesStatus('working');
-        toast({
-          title: "Políticas verificadas",
-          description: "As políticas de storage estão funcionando corretamente.",
-        });
-      } else {
-        setPoliciesStatus('needs_fix');
-        toast({
-          title: "Políticas precisam de correção",
-          description: "As políticas ainda não estão funcionando. Tente fazer upload para testar.",
-          variant: "destructive",
-        });
-      }
-      
-    } catch (error: any) {
-      console.error("FileUploader: Error fixing storage policies:", error);
-      setPoliciesStatus('needs_fix');
-      toast({
-        title: "Erro ao verificar políticas",
-        description: error.message || "Não foi possível verificar as políticas de storage.",
-        variant: "destructive",
-      });
     } finally {
-      setFixingPolicies(false);
-    }
-  };
-
-  const uploadFileWithRetry = async (file: File, attempt = 0): Promise<string> => {
-    const maxRetries = 3;
-    
-    try {
-      console.log(`FileUploader: Upload attempt ${attempt + 1} for file: ${file.name}`);
-      console.log("FileUploader: User authenticated:", !!user, "User ID:", user?.id);
-      console.log("FileUploader: Policies status:", policiesStatus);
-      
-      // Check authentication before attempting upload
-      if (!user) {
-        throw new Error("Usuário não autenticado. Faça login para fazer upload de imagens.");
-      }
-      
-      // Verify session is valid
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        console.error("FileUploader: Session error:", sessionError);
-        throw new Error("Sessão inválida. Faça login novamente.");
-      }
-      
-      console.log("FileUploader: Session valid, proceeding with upload");
-      console.log("FileUploader: Session details:", {
-        user_id: session.user?.id,
-        access_token: session.access_token ? "present" : "missing",
-        expires_at: session.expires_at
-      });
-      
-      // Generate unique filename
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
-      
-      console.log(`FileUploader: Uploading to storage with filename: ${fileName}`);
-      console.log("FileUploader: File details:", {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
-      
-      // Upload file to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from("product-images")
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        console.error("FileUploader: Storage upload error:", error);
-        console.error("FileUploader: Full error object:", JSON.stringify(error, null, 2));
-        
-        // More detailed error handling
-        if (error.message && error.message.includes('row-level security')) {
-          setPoliciesStatus('needs_fix');
-          throw new Error("Erro de permissão: As políticas de segurança impedem o upload. Clique em 'Verificar Políticas' e tente novamente.");
-        } else if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
-          throw new Error("Erro de autenticação: Faça login novamente e tente novamente.");
-        } else if (error.message && error.message.includes('413')) {
-          throw new Error("Arquivo muito grande: O tamanho máximo permitido é 5MB.");
-        } else {
-          throw new Error(`Erro no upload: ${error.message || 'Erro desconhecido'}`);
-        }
-      }
-
-      console.log("FileUploader: Upload successful, data:", data);
-      setPoliciesStatus('working'); // Mark policies as working after successful upload
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("product-images")
-        .getPublicUrl(data.path);
-
-      console.log("FileUploader: Generated public URL:", publicUrl);
-      
-      // Verify the URL is accessible with a quick test
-      try {
-        const testResponse = await fetch(publicUrl, { method: 'HEAD' });
-        console.log("FileUploader: URL accessibility test:", testResponse.status, testResponse.ok);
-        
-        if (!testResponse.ok && testResponse.status !== 404) {
-          console.warn("FileUploader: URL may not be immediately accessible, but continuing...");
-        }
-      } catch (testError) {
-        console.warn("FileUploader: URL test failed, but continuing:", testError);
-      }
-
-      return publicUrl;
-      
-    } catch (error: any) {
-      console.error(`FileUploader: Upload attempt ${attempt + 1} failed:`, error);
-      console.error("FileUploader: Error details:", {
-        message: error.message,
-        error: error.error,
-        stack: error.stack
-      });
-      
-      if (attempt < maxRetries - 1) {
-        console.log(`FileUploader: Retrying upload... (${attempt + 2}/${maxRetries})`);
-        setRetryCount(attempt + 1);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
-        return uploadFileWithRetry(file, attempt + 1);
-      } else {
-        throw error; // Re-throw the original error with full details
-      }
+      setCheckingPolicies(false);
     }
   };
 
@@ -221,7 +84,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    console.log("FileUploader: File selected:", file.name, "Size:", file.size, "Type:", file.type);
+    console.log("📁 FileUploader: Arquivo selecionado:", file.name, "Tamanho:", file.size, "Tipo:", file.type);
 
     // Check authentication first
     if (!user) {
@@ -233,9 +96,19 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       return;
     }
 
+    // Check policies before upload
+    if (policiesStatus !== 'working') {
+      toast({
+        title: "Verificação necessária",
+        description: "Clique em 'Verificar Políticas' antes de fazer upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      console.error("FileUploader: Invalid file type:", file.type);
+      console.error("❌ FileUploader: Tipo de arquivo inválido:", file.type);
       toast({
         title: "Tipo de arquivo inválido",
         description: "Por favor, selecione apenas imagens.",
@@ -246,7 +119,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      console.error("FileUploader: File too large:", file.size);
+      console.error("❌ FileUploader: Arquivo muito grande:", file.size);
       toast({
         title: "Arquivo muito grande",
         description: "O tamanho máximo permitido é 5MB.",
@@ -257,11 +130,51 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
     try {
       setUploading(true);
-      setRetryCount(0);
-      console.log("FileUploader: Starting upload process...");
+      console.log("🚀 FileUploader: Iniciando processo de upload...");
 
-      const publicUrl = await uploadFileWithRetry(file);
-      console.log("FileUploader: Upload completed successfully, URL:", publicUrl);
+      // Verify session is valid
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.error("❌ FileUploader: Erro de sessão:", sessionError);
+        throw new Error("Sessão inválida. Faça login novamente.");
+      }
+
+      // Generate unique filename
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
+      
+      console.log(`📤 FileUploader: Upload para storage com nome: ${fileName}`);
+      
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error("❌ FileUploader: Erro no storage:", error);
+        
+        if (error.message?.includes('row-level security')) {
+          setPoliciesStatus('needs_fix');
+          throw new Error("Erro de permissão: Clique em 'Verificar Políticas' e tente novamente.");
+        } else if (error.message?.includes('401') || error.message?.includes('403')) {
+          throw new Error("Erro de autenticação: Faça login novamente.");
+        } else if (error.message?.includes('413')) {
+          throw new Error("Arquivo muito grande: O tamanho máximo é 5MB.");
+        } else {
+          throw new Error(`Erro no upload: ${error.message}`);
+        }
+      }
+
+      console.log("✅ FileUploader: Upload concluído com sucesso:", data);
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(data.path);
+
+      console.log("🔗 FileUploader: URL pública gerada:", publicUrl);
 
       setImageUrl(publicUrl);
       setImageUrlInput(publicUrl);
@@ -278,9 +191,8 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       }
       
     } catch (error: any) {
-      console.error("FileUploader: Final upload error:", error);
+      console.error("💥 FileUploader: Erro final no upload:", error);
       
-      // Show specific error messages
       toast({
         title: "Erro no upload",
         description: error.message || "Não foi possível fazer o upload do arquivo.",
@@ -288,7 +200,6 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       });
     } finally {
       setUploading(false);
-      setRetryCount(0);
     }
   };
 
@@ -316,7 +227,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       return;
     }
     
-    console.log("FileUploader: Setting external image URL:", imageUrlInput);
+    console.log("🔗 FileUploader: Definindo URL externa:", imageUrlInput);
     setImageUrl(imageUrlInput);
     onUploadComplete(imageUrlInput);
     
@@ -328,20 +239,19 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
   const refreshImage = () => {
     if (imageUrl) {
-      // Force refresh by adding timestamp
       const refreshUrl = imageUrl.includes('?') 
         ? `${imageUrl}&t=${Date.now()}` 
         : `${imageUrl}?t=${Date.now()}`;
-      console.log("FileUploader: Refreshing image URL:", refreshUrl);
+      console.log("🔄 FileUploader: Atualizando imagem:", refreshUrl);
       setImageUrl(refreshUrl);
     }
   };
 
-  const getPoliciesStatusColor = () => {
+  const getPoliciesStatusIcon = () => {
     switch (policiesStatus) {
-      case 'working': return 'text-green-600';
-      case 'needs_fix': return 'text-red-600';
-      default: return 'text-gray-600';
+      case 'working': return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'needs_fix': return <AlertCircle className="h-4 w-4 text-red-600" />;
+      default: return <Settings className="h-4 w-4 text-gray-600" />;
     }
   };
 
@@ -353,14 +263,20 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     }
   };
 
+  const getPoliciesStatusColor = () => {
+    switch (policiesStatus) {
+      case 'working': return 'text-green-600';
+      case 'needs_fix': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Label>Upload de Imagem</Label>
-          {policiesStatus === 'working' && (
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          )}
+          {getPoliciesStatusIcon()}
           <span className={`text-xs ${getPoliciesStatusColor()}`}>
             ({getPoliciesStatusText()})
           </span>
@@ -369,16 +285,16 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
           type="button"
           variant="outline"
           size="sm"
-          onClick={fixingPolicies ? undefined : fixStoragePolicies}
-          disabled={fixingPolicies}
+          onClick={checkingPolicies ? undefined : checkPoliciesStatus}
+          disabled={checkingPolicies}
           className="flex items-center gap-2"
         >
-          {fixingPolicies ? (
+          {checkingPolicies ? (
             <Loader2 className="h-3 w-3 animate-spin" />
           ) : (
             <Settings className="h-3 w-3" />
           )}
-          {fixingPolicies ? "Verificando..." : "Verificar Políticas"}
+          {checkingPolicies ? "Verificando..." : "Verificar Políticas"}
         </Button>
       </div>
 
@@ -395,7 +311,15 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       {user && policiesStatus === 'needs_fix' && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-md">
           <p className="text-sm text-red-700">
-            ⚠️ As políticas de storage podem estar com problema. Clique em "Verificar Políticas" antes de fazer upload.
+            ⚠️ As políticas de storage estão com problema. Clique em "Verificar Políticas" antes de fazer upload.
+          </p>
+        </div>
+      )}
+      
+      {user && policiesStatus === 'working' && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+          <p className="text-sm text-green-700">
+            ✅ Políticas funcionando corretamente. Você pode fazer upload.
           </p>
         </div>
       )}
@@ -422,17 +346,14 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
                 accept="image/*"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                disabled={uploading || !user}
+                disabled={uploading || !user || policiesStatus !== 'working'}
                 className="cursor-pointer"
               />
             </div>
             {uploading && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>
-                  Enviando imagem...
-                  {retryCount > 0 && ` (Tentativa ${retryCount + 1})`}
-                </span>
+                <span>Enviando imagem...</span>
               </div>
             )}
           </div>
@@ -480,9 +401,9 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
               src={imageUrl}
               alt="Preview"
               className="mx-auto max-h-48 object-contain"
-              key={imageUrl} // Force re-render when URL changes
+              key={imageUrl}
               onError={(e) => {
-                console.error("FileUploader: Error loading preview image:", imageUrl);
+                console.error("❌ FileUploader: Erro ao carregar preview:", imageUrl);
                 toast({
                   title: "Erro ao carregar imagem",
                   description: "Não foi possível carregar a imagem. Verifique a URL.",
@@ -490,7 +411,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
                 });
               }}
               onLoad={() => {
-                console.log("FileUploader: Preview image loaded successfully:", imageUrl);
+                console.log("✅ FileUploader: Preview carregado com sucesso:", imageUrl);
               }}
             />
           </div>
