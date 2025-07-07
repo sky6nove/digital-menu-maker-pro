@@ -262,7 +262,7 @@ const ProductTable = ({ products, categories, onEdit, onDelete, onAddProduct }: 
                                 className="bg-red-600 hover:bg-red-700"
                               >
                                 Excluir
-                              </ActionAlertDialog>
+                              </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
