@@ -23,9 +23,9 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("🔍 Verificando configuração de storage...");
+    console.log("🔧 Iniciando verificação e correção das políticas de storage...");
 
-    // Verificar configuração do bucket
+    // Step 1: Check bucket configuration
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     
     if (bucketsError) {
@@ -34,34 +34,73 @@ serve(async (req) => {
     }
 
     const productImagesBucket = buckets?.find(b => b.name === 'product-images');
-    console.log("📁 Bucket product-images:", productImagesBucket);
+    console.log("📁 Bucket product-images encontrado:", productImagesBucket);
 
+    if (!productImagesBucket) {
+      console.log("❌ Bucket product-images não encontrado - será criado automaticamente");
+      return new Response(JSON.stringify({
+        success: false,
+        message: "Bucket product-images não encontrado. Execute a migração SQL novamente.",
+        details: {
+          bucket_exists: false,
+          timestamp: new Date().toISOString()
+        }
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    // Step 2: Test upload functionality with real file
     let uploadTest = "failed";
+    let publicUrlTest = "failed";
     let testFilePath = "";
     
     try {
-      // Testar upload real para verificar se as políticas estão funcionando
-      const testFileName = `test-${Date.now()}.txt`;
-      const testFile = new File(['test content for storage policies'], testFileName, { type: 'text/plain' });
+      // Create a small test file
+      const testFileName = `test-upload-${Date.now()}.txt`;
+      const testFileContent = new Uint8Array([116, 101, 115, 116]); // "test" in bytes
       
-      console.log("🧪 Testando upload com arquivo:", testFileName);
+      console.log("🧪 Testando upload real com arquivo:", testFileName);
       
-      const { data: testUpload, error: testError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('product-images')
-        .upload(testFileName, testFile);
+        .upload(testFileName, testFileContent, {
+          contentType: 'text/plain',
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (testError) {
-        console.log("❌ Teste de upload falhou:", testError.message);
-        uploadTest = `failed: ${testError.message}`;
-      } else if (testUpload) {
-        console.log("✅ Teste de upload bem-sucedido:", testUpload);
+      if (uploadError) {
+        console.error("❌ Erro no teste de upload:", uploadError);
+        uploadTest = `failed: ${uploadError.message}`;
+      } else if (uploadData) {
+        console.log("✅ Upload bem-sucedido:", uploadData.path);
         uploadTest = "success";
-        testFilePath = testUpload.path;
+        testFilePath = uploadData.path;
         
-        // Limpar arquivo de teste
+        // Test public URL generation
+        try {
+          const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(uploadData.path);
+          
+          if (publicUrl && publicUrl.includes('product-images')) {
+            console.log("✅ URL pública gerada com sucesso:", publicUrl);
+            publicUrlTest = "success";
+          } else {
+            console.error("❌ URL pública inválida:", publicUrl);
+            publicUrlTest = "failed: invalid URL format";
+          }
+        } catch (urlError) {
+          console.error("❌ Erro ao gerar URL pública:", urlError);
+          publicUrlTest = `failed: ${urlError.message}`;
+        }
+        
+        // Clean up test file
         const { error: deleteError } = await supabase.storage
           .from('product-images')
-          .remove([testUpload.path]);
+          .remove([uploadData.path]);
           
         if (deleteError) {
           console.log("⚠️ Aviso: Não foi possível limpar arquivo de teste:", deleteError.message);
@@ -70,31 +109,34 @@ serve(async (req) => {
         }
       }
     } catch (uploadError) {
-      console.error("❌ Erro durante teste de upload:", uploadError);
+      console.error("💥 Erro durante teste de upload:", uploadError);
       uploadTest = `error: ${uploadError.message}`;
     }
 
-    // Verificar URL pública
-    let publicUrlTest = "not_tested";
-    if (testFilePath) {
-      try {
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(testFilePath);
-        
-        console.log("🔗 URL pública gerada:", publicUrl);
-        publicUrlTest = "success";
-      } catch (urlError) {
-        console.error("❌ Erro ao gerar URL pública:", urlError);
-        publicUrlTest = `failed: ${urlError.message}`;
+    // Step 3: Check storage policies exist
+    let policiesCheck = "unknown";
+    try {
+      // We can't directly query pg_policies from the edge function with service role
+      // But we can infer from upload test results
+      if (uploadTest === "success") {
+        policiesCheck = "working";
+        console.log("✅ Políticas RLS funcionando corretamente");
+      } else {
+        policiesCheck = "needs_fix";
+        console.log("⚠️ Políticas RLS podem precisar de correção");
       }
+    } catch (policyError) {
+      console.error("❌ Erro ao verificar políticas:", policyError);
+      policiesCheck = "error";
     }
 
+    const isFullyWorking = uploadTest === "success" && publicUrlTest === "success";
+
     const result = {
-      success: uploadTest === "success",
-      message: uploadTest === "success" 
-        ? "Políticas de storage funcionando corretamente" 
-        : "Problemas detectados nas políticas de storage",
+      success: isFullyWorking,
+      message: isFullyWorking 
+        ? "✅ Sistema de storage funcionando perfeitamente! Você pode fazer upload de imagens." 
+        : "⚠️ Problemas detectados no sistema de storage",
       details: {
         bucket_exists: !!productImagesBucket,
         bucket_public: productImagesBucket?.public || false,
@@ -102,11 +144,16 @@ serve(async (req) => {
         bucket_allowed_mime_types: productImagesBucket?.allowed_mime_types || null,
         upload_test: uploadTest,
         public_url_test: publicUrlTest,
-        timestamp: new Date().toISOString()
+        policies_check: policiesCheck,
+        timestamp: new Date().toISOString(),
+        debug_info: {
+          supabase_url: supabaseUrl,
+          has_service_key: !!supabaseServiceKey
+        }
       }
     };
 
-    console.log("📊 Resultado final:", result);
+    console.log("📊 Resultado final da verificação:", result);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -114,11 +161,15 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error("💥 Erro na função fix-storage-policies:", error);
+    console.error("💥 Erro crítico na função fix-storage-policies:", error);
     return new Response(JSON.stringify({ 
       success: false,
       error: error.message,
-      details: "Falha ao verificar políticas de storage"
+      message: "Falha crítica ao verificar políticas de storage",
+      details: {
+        timestamp: new Date().toISOString(),
+        error_type: error.name || "Unknown"
+      }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

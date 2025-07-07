@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Image as ImageIcon, Link, Loader2, RefreshCw, Settings, CheckCircle, AlertCircle } from "lucide-react";
+import { Image as ImageIcon, Link, Loader2, RefreshCw, Settings, CheckCircle, AlertCircle, X } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -58,22 +58,41 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       if (error) {
         console.error("❌ FileUploader: Erro ao verificar políticas:", error);
         setPoliciesStatus('needs_fix');
+        toast({
+          title: "Erro ao verificar políticas",
+          description: "Não foi possível verificar o status do storage. Tente novamente.",
+          variant: "destructive",
+        });
         return;
       }
       
-      console.log("📊 FileUploader: Status das políticas:", data);
+      console.log("📊 FileUploader: Resposta da verificação:", data);
       
-      if (data?.success && data?.details?.upload_test === 'success') {
+      if (data?.success) {
         setPoliciesStatus('working');
         console.log("✅ Políticas funcionando corretamente");
+        toast({
+          title: "✅ Sistema funcionando",
+          description: "Upload de imagens está funcionando perfeitamente!",
+        });
       } else {
         setPoliciesStatus('needs_fix');
-        console.log("⚠️ Políticas precisam de correção:", data?.details?.upload_test);
+        console.log("⚠️ Políticas precisam de correção:", data?.details);
+        toast({
+          title: "⚠️ Problema detectado",
+          description: data?.message || "Problemas nas políticas de storage detectados.",
+          variant: "destructive",
+        });
       }
       
     } catch (error: any) {
       console.error("💥 FileUploader: Erro ao verificar políticas:", error);
       setPoliciesStatus('needs_fix');
+      toast({
+        title: "Erro na verificação",
+        description: "Erro inesperado ao verificar políticas de storage.",
+        variant: "destructive",
+      });
     } finally {
       setCheckingPolicies(false);
     }
@@ -111,7 +130,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       console.error("❌ FileUploader: Tipo de arquivo inválido:", file.type);
       toast({
         title: "Tipo de arquivo inválido",
-        description: "Por favor, selecione apenas imagens.",
+        description: "Por favor, selecione apenas imagens (JPG, PNG, WEBP, etc).",
         variant: "destructive",
       });
       return;
@@ -122,7 +141,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       console.error("❌ FileUploader: Arquivo muito grande:", file.size);
       toast({
         title: "Arquivo muito grande",
-        description: "O tamanho máximo permitido é 5MB.",
+        description: `O tamanho máximo permitido é 5MB. Seu arquivo tem ${(file.size / 1024 / 1024).toFixed(1)}MB.`,
         variant: "destructive",
       });
       return;
@@ -139,8 +158,9 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         throw new Error("Sessão inválida. Faça login novamente.");
       }
 
-      // Generate unique filename
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name}`;
+      // Generate unique filename with proper extension
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `product-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
       
       console.log(`📤 FileUploader: Upload para storage com nome: ${fileName}`);
       
@@ -155,12 +175,12 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
       if (error) {
         console.error("❌ FileUploader: Erro no storage:", error);
         
-        if (error.message?.includes('row-level security')) {
+        if (error.message?.includes('row-level security') || error.message?.includes('RLS')) {
           setPoliciesStatus('needs_fix');
-          throw new Error("Erro de permissão: Clique em 'Verificar Políticas' e tente novamente.");
+          throw new Error("Erro de permissão: Execute 'Verificar Políticas' novamente.");
         } else if (error.message?.includes('401') || error.message?.includes('403')) {
           throw new Error("Erro de autenticação: Faça login novamente.");
-        } else if (error.message?.includes('413')) {
+        } else if (error.message?.includes('413') || error.message?.includes('payload too large')) {
           throw new Error("Arquivo muito grande: O tamanho máximo é 5MB.");
         } else {
           throw new Error(`Erro no upload: ${error.message}`);
@@ -176,13 +196,17 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
 
       console.log("🔗 FileUploader: URL pública gerada:", publicUrl);
 
+      if (!publicUrl || !publicUrl.includes('product-images')) {
+        throw new Error("Erro ao gerar URL pública da imagem");
+      }
+
       setImageUrl(publicUrl);
       setImageUrlInput(publicUrl);
       onUploadComplete(publicUrl);
 
       toast({
-        title: "Upload concluído",
-        description: "A imagem foi carregada com sucesso.",
+        title: "✅ Upload concluído",
+        description: "A imagem foi carregada com sucesso e está pronta para uso!",
       });
       
       // Clear the file input
@@ -232,8 +256,21 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
     onUploadComplete(imageUrlInput);
     
     toast({
-      title: "URL definida",
+      title: "✅ URL definida",
       description: "A URL da imagem foi definida com sucesso.",
+    });
+  };
+
+  const clearImage = () => {
+    setImageUrl("");
+    setImageUrlInput("");
+    onUploadComplete("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    toast({
+      title: "Imagem removida",
+      description: "A imagem foi removida do produto.",
     });
   };
 
@@ -277,7 +314,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         <div className="flex items-center gap-2">
           <Label>Upload de Imagem</Label>
           {getPoliciesStatusIcon()}
-          <span className={`text-xs ${getPoliciesStatusColor()}`}>
+          <span className={`text-xs font-medium ${getPoliciesStatusColor()}`}>
             ({getPoliciesStatusText()})
           </span>
         </div>
@@ -298,7 +335,56 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         </Button>
       </div>
 
-      {/* Authentication status indicator */}
+      {/* Current image preview */}
+      {imageUrl && (
+        <div className="p-3 border rounded-lg bg-muted/20">
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-sm font-medium">Imagem atual</Label>
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={refreshImage}
+                className="h-7 px-2"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={clearImage}
+                className="h-7 px-2 text-red-600 hover:text-red-700"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+          <img
+            src={imageUrl}
+            alt="Preview do produto"
+            className="mx-auto max-h-32 object-contain rounded-md border"
+            key={imageUrl}
+            onError={(e) => {
+              console.error("❌ FileUploader: Erro ao carregar preview:", imageUrl);
+              toast({
+                title: "Erro ao carregar imagem",
+                description: "Não foi possível carregar a imagem. Verifique a URL.",
+                variant: "destructive",
+              });
+            }}
+            onLoad={() => {
+              console.log("✅ FileUploader: Preview carregado com sucesso:", imageUrl);
+            }}
+          />
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Esta imagem será exibida no menu e no formulário
+          </p>
+        </div>
+      )}
+
+      {/* Status indicators */}
       {!user && (
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <p className="text-sm text-yellow-700">
@@ -307,7 +393,6 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         </div>
       )}
       
-      {/* Policies status indicator */}
       {user && policiesStatus === 'needs_fix' && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-md">
           <p className="text-sm text-red-700">
@@ -339,7 +424,7 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
         <TabsContent value="upload" className="space-y-4">
           <div className="flex flex-col gap-2">
             <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="picture">Imagem</Label>
+              <Label htmlFor="picture">Selecionar Imagem</Label>
               <Input
                 id="picture"
                 type="file"
@@ -349,9 +434,12 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
                 disabled={uploading || !user || policiesStatus !== 'working'}
                 className="cursor-pointer"
               />
+              <p className="text-xs text-muted-foreground">
+                Formatos suportados: JPG, PNG, WEBP, GIF (máximo 5MB)
+              </p>
             </div>
             {uploading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground animate-pulse">
+              <div className="flex items-center gap-2 text-sm text-blue-600 animate-pulse">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Enviando imagem...</span>
               </div>
@@ -381,42 +469,6 @@ const FileUploader = ({ onUploadComplete, currentImageUrl }: FileUploaderProps) 
           </form>
         </TabsContent>
       </Tabs>
-
-      {imageUrl && (
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <Label>Pré-visualização</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={refreshImage}
-              className="h-8 px-2"
-            >
-              <RefreshCw className="h-3 w-3" />
-            </Button>
-          </div>
-          <div className="mt-2 border rounded-md p-2 bg-muted/30">
-            <img
-              src={imageUrl}
-              alt="Preview"
-              className="mx-auto max-h-48 object-contain"
-              key={imageUrl}
-              onError={(e) => {
-                console.error("❌ FileUploader: Erro ao carregar preview:", imageUrl);
-                toast({
-                  title: "Erro ao carregar imagem",
-                  description: "Não foi possível carregar a imagem. Verifique a URL.",
-                  variant: "destructive",
-                });
-              }}
-              onLoad={() => {
-                console.log("✅ FileUploader: Preview carregado com sucesso:", imageUrl);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

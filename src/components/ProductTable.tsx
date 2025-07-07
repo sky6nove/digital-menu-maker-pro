@@ -1,140 +1,290 @@
 
 import { useState } from "react";
-import { Product, Category } from "../types";
+import { Product, Category } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { X, Check, Trash, Edit } from "lucide-react";
+import { Edit, Trash2, Plus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import ProductImageThumbnail from "./ProductImageThumbnail";
 
 interface ProductTableProps {
   products: Product[];
   categories: Category[];
   onEdit: (product: Product) => void;
   onDelete: (id: number) => void;
+  onAddProduct: (categoryId?: number) => void;
 }
 
-const ProductTable = ({ products, categories, onEdit, onDelete }: ProductTableProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value.toLowerCase());
-  };
-
-  const handleCategorySelect = (categoryId: number | null) => {
-    setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
-  };
-
-  // Filter products based on search term and selected category
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm);
-    const matchesCategory = selectedCategory === null || product.categoryId === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+const ProductTable = ({ products, categories, onEdit, onDelete, onAddProduct }: ProductTableProps) => {
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const getCategoryName = (categoryId: number) => {
-    return categories.find((c) => c.id === categoryId)?.name || "Sem categoria";
+    const category = categories.find(c => c.id === categoryId);
+    return category ? category.name : "Sem categoria";
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="w-full sm:w-1/2">
-          <Input
-            placeholder="Buscar produtos..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="w-full"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={selectedCategory === null ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleCategorySelect(null)}
-          >
-            Todos
-          </Button>
-          {categories.map((category) => (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleCategorySelect(category.id)}
-            >
-              {category.name}
-            </Button>
-          ))}
-        </div>
-      </div>
+  const handleDeleteConfirm = () => {
+    if (productToDelete) {
+      onDelete(productToDelete.id);
+      setProductToDelete(null);
+    }
+  };
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead className="text-right">Preço</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>{product.id}</TableCell>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{getCategoryName(product.categoryId)}</TableCell>
-                  <TableCell className="text-right">
-                    R$ {product.price.toFixed(2).replace(".", ",")}
-                  </TableCell>
-                  <TableCell>
-                    {product.isActive ? (
-                      <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-                        <Check className="h-3.5 w-3.5 mr-1" />
-                        Ativo
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
-                        <X className="h-3.5 w-3.5 mr-1" />
-                        Inativo
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEdit(product)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onDelete(product.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+  const groupedProducts = categories.reduce((acc, category) => {
+    const categoryProducts = products.filter(p => p.categoryId === category.id);
+    if (categoryProducts.length > 0) {
+      acc[category.id] = {
+        category,
+        products: categoryProducts
+      };
+    }
+    return acc;
+  }, {} as Record<number, { category: Category; products: Product[] }>);
+
+  // Products without category
+  const productsWithoutCategory = products.filter(p => 
+    !categories.some(c => c.id === p.categoryId)
+  );
+
+  return (
+    <div className="space-y-6">
+      {Object.values(groupedProducts).map(({ category, products: categoryProducts }) => (
+        <div key={category.id} className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-semibold">{category.name}</h3>
+              <Badge variant={category.isActive ? "default" : "secondary"}>
+                {categoryProducts.length} produtos
+              </Badge>
+            </div>
+            <Button 
+              size="sm" 
+              onClick={() => onAddProduct(category.id)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar produto
+            </Button>
+          </div>
+          
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-20">Imagem</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="w-24">Preço</TableHead>
+                  <TableHead className="w-20">Status</TableHead>
+                  <TableHead className="w-32">Ações</TableHead>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-6">
-                  Nenhum produto encontrado
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {categoryProducts.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      <ProductImageThumbnail
+                        imageUrl={product.image_url}
+                        productName={product.name}
+                        className="w-12 h-12"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell className="max-w-xs">
+                      <p className="truncate text-sm text-muted-foreground">
+                        {product.description || "Sem descrição"}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      R$ {product.price.toFixed(2).replace('.', ',')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={product.isActive ? "default" : "secondary"}>
+                        {product.isActive ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEdit(product)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setProductToDelete(product)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir o produto "{product.name}"?
+                                Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setProductToDelete(null)}>
+                                Cancelar
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleDeleteConfirm}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      ))}
+
+      {productsWithoutCategory.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-semibold">Produtos sem categoria</h3>
+              <Badge variant="secondary">
+                {productsWithoutCategory.length} produtos
+              </Badge>
+            </div>
+            <Button 
+              size="sm" 
+              onClick={() => onAddProduct()}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar produto
+            </Button>
+          </div>
+          
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-20">Imagem</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="w-24">Preço</TableHead>
+                  <TableHead className="w-20">Status</TableHead>
+                  <TableHead className="w-32">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {productsWithoutCategory.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      <ProductImageThumbnail
+                        imageUrl={product.image_url}
+                        productName={product.name}
+                        className="w-12 h-12"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell className="max-w-xs">
+                      <p className="truncate text-sm text-muted-foreground">
+                        {product.description || "Sem descrição"}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      R$ {product.price.toFixed(2).replace('.', ',')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={product.isActive ? "default" : "secondary"}>
+                        {product.isActive ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEdit(product)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setProductToDelete(product)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir o produto "{product.name}"?
+                                Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setProductToDelete(null)}>
+                                Cancelar
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleDeleteConfirm}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Excluir
+                              </ActionAlertDialog>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {Object.keys(groupedProducts).length === 0 && productsWithoutCategory.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">Nenhum produto cadastrado ainda.</p>
+          <Button onClick={() => onAddProduct()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar primeiro produto
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

@@ -24,16 +24,22 @@ const ImagesTab = ({ currentImageUrl, onUploadComplete }: ImagesTabProps) => {
       
       {currentImageUrl && (
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Imagem atual no menu</Label>
+          <Label className="text-sm font-medium">Como aparecerá no menu público</Label>
           <div className="p-4 border rounded-lg bg-muted/20">
-            <img
-              src={currentImageUrl}
-              alt="Imagem do produto no menu"
-              className="mx-auto max-h-32 object-contain rounded-md"
-            />
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Esta imagem será exibida no menu público
-            </p>
+            <div className="max-w-xs mx-auto">
+              <img
+                src={currentImageUrl}
+                alt="Preview do produto no menu"
+                className="w-full h-32 object-cover rounded-md border"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Preview de como aparecerá no menu público
+              </p>
+            </div>
           </div>
         </div>
       )}
