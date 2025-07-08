@@ -68,23 +68,39 @@ export const useProducts = (userId?: string) => {
 
   const handleSubmitProduct = async (productData: Omit<Product, "id"> | Product, sizes?: ProductSize[]): Promise<Product | undefined> => {
     try {
+      console.log("🔄 useProducts: Iniciando salvamento do produto:", {
+        hasId: "id" in productData,
+        productId: "id" in productData ? productData.id : "novo",
+        name: productData.name,
+        image_url: productData.image_url,
+        imageUrlType: typeof productData.image_url,
+        imageUrlLength: productData.image_url?.length || 0
+      });
+
       if ("id" in productData && productData.id > 0) {
         // Update existing product
+        console.log("📝 useProducts: Atualizando produto existente ID:", productData.id);
+        
+        // Prepare update data with proper image URL handling
+        const updateData = {
+          name: productData.name,
+          description: productData.description || null,
+          price: productData.price,
+          category_id: productData.categoryId || null,
+          is_active: productData.isActive,
+          image_url: productData.image_url && productData.image_url.trim() !== '' ? productData.image_url.trim() : null,
+          allow_half_half: productData.allow_half_half || false,
+          half_half_price_rule: productData.half_half_price_rule || 'highest',
+          has_stock_control: productData.hasStockControl || false,
+          stock_quantity: productData.stockQuantity || 0,
+          updated_at: new Date().toISOString()
+        };
+
+        console.log("💾 useProducts: Dados para atualização:", updateData);
+        
         const { data, error } = await supabase
           .from("products")
-          .update({
-            name: productData.name,
-            description: productData.description || null,
-            price: productData.price,
-            category_id: productData.categoryId || null,
-            is_active: productData.isActive,
-            image_url: productData.image_url || null,
-            allow_half_half: productData.allow_half_half || false,
-            half_half_price_rule: productData.half_half_price_rule || 'highest',
-            has_stock_control: productData.hasStockControl || false,
-            stock_quantity: productData.stockQuantity || 0,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq("id", productData.id)
           .eq("user_id", userId)
           .select()
@@ -139,32 +155,42 @@ export const useProducts = (userId?: string) => {
         return updatedProduct;
       } else {
         // Create new product
-        console.log("Creating new product with data:", productData);
+        console.log("➕ useProducts: Criando novo produto");
+        
+        // Prepare insert data with proper image URL handling
+        const insertData = {
+          name: productData.name,
+          description: productData.description || null,
+          price: productData.price,
+          category_id: productData.categoryId || null,
+          is_active: productData.isActive,
+          image_url: productData.image_url && productData.image_url.trim() !== '' ? productData.image_url.trim() : null,
+          allow_half_half: productData.allow_half_half || false,
+          half_half_price_rule: productData.half_half_price_rule || 'highest',
+          has_stock_control: productData.hasStockControl || false,
+          stock_quantity: productData.stockQuantity || 0,
+          user_id: userId
+        };
+
+        console.log("💾 useProducts: Dados para inserção:", insertData);
         
         const { data, error } = await supabase
           .from("products")
-          .insert({
-            name: productData.name,
-            description: productData.description || null,
-            price: productData.price,
-            category_id: productData.categoryId || null,
-            is_active: productData.isActive,
-            image_url: productData.image_url || null,
-            allow_half_half: productData.allow_half_half || false,
-            half_half_price_rule: productData.half_half_price_rule || 'highest',
-            has_stock_control: productData.hasStockControl || false,
-            stock_quantity: productData.stockQuantity || 0,
-            user_id: userId
-          })
+          .insert(insertData)
           .select()
           .single();
           
         if (error) {
-          console.error("Database error when creating product:", error);
+          console.error("❌ useProducts: Erro ao criar produto:", error);
           throw error;
         }
         
-        console.log("Created product data:", data);
+        console.log("✅ useProducts: Produto criado com sucesso:", {
+          id: data.id,
+          name: data.name,
+          image_url: data.image_url,
+          savedImageUrl: data.image_url
+        });
         
         // Insert sizes if provided
         if (sizes && sizes.length > 0) {

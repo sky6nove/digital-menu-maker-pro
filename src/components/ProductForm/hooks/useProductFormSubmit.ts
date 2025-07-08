@@ -17,9 +17,13 @@ export const useProductFormSubmit = (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("useProductFormSubmit: Submitting product data:", {
-      ...formData,
-      image_url: formData.image_url
+    console.log("🚀 useProductFormSubmit: Iniciando submissão do produto:", {
+      productName: formData.name,
+      hasImageUrl: !!formData.image_url,
+      imageUrl: formData.image_url,
+      imageUrlType: typeof formData.image_url,
+      imageUrlLength: formData.image_url?.length || 0,
+      isEditing: !!product?.id
     });
     
     // Validate form
@@ -43,20 +47,18 @@ export const useProductFormSubmit = (
     
     setLoading(true);
     try {
-      // Log the image URL being submitted
-      if (formData.image_url) {
-        console.log("useProductFormSubmit: Submitting with image URL:", formData.image_url);
-      } else {
-        console.log("useProductFormSubmit: No image URL provided");
-      }
-      
-      // Ensure the image_url is properly included in the form data
+      // Prepare final product data with careful image URL handling
       const productDataWithImage = {
         ...formData,
-        image_url: formData.image_url || null // Explicitly set to null if empty
+        image_url: formData.image_url && formData.image_url.trim() !== '' ? formData.image_url.trim() : null
       };
       
-      console.log("useProductFormSubmit: Final product data before submission:", productDataWithImage);
+      console.log("📤 useProductFormSubmit: Enviando dados finais:", {
+        name: productDataWithImage.name,
+        image_url: productDataWithImage.image_url,
+        imageUrlWillBeSaved: productDataWithImage.image_url !== null,
+        allData: productDataWithImage
+      });
       
       await onSubmit(productDataWithImage);
       

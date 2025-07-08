@@ -46,7 +46,21 @@ export const useProductFormState = (product?: Product) => {
   };
 
   const handleImageUpload = (url: string) => {
-    setFormData(prev => ({ ...prev, image_url: url }));
+    console.log("🖼️ useProductFormState: Atualizando imagem no formulário:", {
+      newUrl: url,
+      urlType: typeof url,
+      urlLength: url?.length || 0,
+      currentImageUrl: formData.image_url
+    });
+    
+    setFormData(prev => {
+      const newFormData = { ...prev, image_url: url };
+      console.log("🔄 useProductFormState: Estado atualizado:", {
+        prevImageUrl: prev.image_url,
+        newImageUrl: newFormData.image_url
+      });
+      return newFormData;
+    });
   };
 
   const handleSizeChange = (newSizes: ProductSize[]) => {
