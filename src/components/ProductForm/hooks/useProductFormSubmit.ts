@@ -50,7 +50,7 @@ export const useProductFormSubmit = (
       // Prepare final product data with careful image URL handling
       const productDataWithImage = {
         ...formData,
-        image_url: formData.image_url && formData.image_url.trim() !== '' ? formData.image_url.trim() : null
+        image_url: formData.image_url && formData.image_url.trim() !== '' ? formData.image_url.trim() : ""
       };
       
       console.log("📤 useProductFormSubmit: Enviando dados finais:", {
