@@ -48,7 +48,7 @@ export const useReorderMenu = () => {
     saving: savingProducts,
     handleProductMove, 
     handleProductSelect 
-  } = useReorderProducts(products, activeCategory, memoizedLoadProducts);
+  } = useReorderProducts(products, activeCategory, async () => { loadProducts(); });
   
   const { 
     productGroups, 
